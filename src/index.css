@@ -1,0 +1,896 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-bg: #0b0d10;
+  --color-surface: #11151a;
+  --color-card: #151a21;
+  --color-border: #222831;
+  --color-border-strong: #3e4756;
+  --color-text: #f5f7fa;
+  --color-text-muted: #9ba3af;
+  --color-accent: #e11d48;
+  --color-accent-hover: #e11d48dd;
+  --color-accent-subtle: #e11d481a;
+  --body-font-size: 16px;
+  --font-headline: 'Newsreader', Georgia, Cambria, 'Times New Roman', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --content-max-w: 80rem; /* default 1280px */
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DYNAMIC FONT FAMILIES
+   ───────────────────────────────────────────────────────────── */
+.font-mode-serif {
+  --font-headline: 'Newsreader', Georgia, Cambria, 'Times New Roman', serif;
+  --font-body: 'Newsreader', Georgia, Cambria, serif;
+}
+
+.font-mode-sans {
+  --font-headline: Arial, Helvetica, "Nimbus Sans L", "Liberation Sans", sans-serif !important;
+  --font-body: Arial, Helvetica, "Nimbus Sans L", "Liberation Sans", sans-serif !important;
+  font-family: Arial, Helvetica, "Nimbus Sans L", "Liberation Sans", sans-serif !important;
+}
+
+.font-mode-mono {
+  --font-headline: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace !important;
+  --font-body: 'JetBrains Mono', Menlo, Monaco, Consolas, monospace !important;
+}
+
+.font-mode-system {
+  --font-headline: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+  --font-body: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DYNAMIC CONTAINER WIDTHS
+   ───────────────────────────────────────────────────────────── */
+.main-content-container {
+  width: 100%;
+}
+
+.width-mode-compact .main-content-container {
+  max-width: 64rem !important; /* 1024px */
+}
+
+.width-mode-standard .main-content-container {
+  max-width: 76rem !important; /* 1216px */
+}
+
+.width-mode-wide .main-content-container {
+  max-width: 92rem !important; /* 1472px */
+}
+
+.width-mode-full .main-content-container {
+  max-width: 98% !important; /* 98% of viewport */
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DYNAMIC ARTICLE SPACING
+   ───────────────────────────────────────────────────────────── */
+.spacing-mode-compact .newspaper-row {
+  margin-bottom: 1.5rem !important;
+  gap: 1rem !important;
+}
+.spacing-mode-compact article:not(.tv-tile) {
+  padding-bottom: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+}
+
+.spacing-mode-comfortable .newspaper-row {
+  margin-bottom: 2.75rem !important;
+  gap: 2rem !important;
+}
+.spacing-mode-comfortable article:not(.tv-tile) {
+  padding-bottom: 1.25rem !important;
+  margin-bottom: 1.25rem !important;
+}
+
+.spacing-mode-spacious .newspaper-row {
+  margin-bottom: 4rem !important;
+  gap: 2.75rem !important;
+}
+.spacing-mode-spacious article:not(.tv-tile) {
+  padding-bottom: 2rem !important;
+  margin-bottom: 2rem !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DYNAMIC BORDER STYLES
+   ───────────────────────────────────────────────────────────── */
+.border-mode-none * {
+  border-color: transparent !important;
+}
+
+.border-mode-strong article,
+.border-mode-strong section,
+.border-mode-strong header {
+  border-color: var(--color-border-strong) !important;
+}
+.border-mode-strong .border-b,
+.border-mode-strong .border-t {
+  border-bottom-width: 2px !important;
+}
+.border-mode-strong .border-r {
+  border-right-width: 2px !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   BASE BODY STYLES
+   ───────────────────────────────────────────────────────────── */
+body {
+  font-size: var(--body-font-size);
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  overflow-x: hidden;
+}
+
+/* Reduced motion preference */
+.reduce-motion * {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border-strong);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+/* Scrollable rows (tab bars, chip strips) without a visible scrollbar */
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Subtle animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Drop Cap for editorial stories */
+.editorial-drop-cap::first-letter {
+  float: left;
+  font-size: 3.5rem;
+  line-height: 0.85;
+  padding-top: 4px;
+  padding-right: 8px;
+  padding-bottom: 4px;
+  font-family: var(--font-headline);
+  font-weight: 900;
+  color: var(--color-accent);
+}
+
+/* Reader HTML content styling */
+.reader-html-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.375rem;
+  margin: 1.5rem 0;
+}
+
+.reader-html-content p {
+  margin-bottom: 1.25rem;
+  line-height: 1.75;
+}
+
+.reader-html-content a {
+  color: var(--color-accent);
+  text-decoration: underline;
+}
+
+.reader-html-content pre, .reader-html-content code {
+  font-family: 'JetBrains Mono', monospace;
+  background-color: var(--color-card);
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+}
+
+/* Vendor, group, actor, malware and CVE names that open their panel: the text's own look until hovered or
+   focused, then an underline in the same colour */
+.entity-link {
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+.entity-link:hover,
+.entity-link:focus-visible {
+  text-decoration: underline;
+  text-decoration-color: currentColor;
+  text-underline-offset: 3px;
+}
+/* Keyboard focus also gets a faint ring in the text's colour, so it shows where the underline alone is easy to miss */
+.entity-link:focus-visible {
+  outline: 1px solid color-mix(in srgb, currentColor 40%, transparent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Tag chips (TagChip) keep each place's look and open the tag's panel: on hover or focus they lift a pixel
+   and grow a touch (160 ms, transform only); pressing settles them back */
+button.tag-chip {
+  cursor: pointer;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), color 150ms, border-color 150ms, background-color 150ms;
+}
+.tag-chip:hover,
+.tag-chip:focus-visible {
+  transform: translateY(-1px) scale(1.04);
+}
+.tag-chip:active {
+  transform: translateY(0) scale(0.98);
+}
+.tag-chip:focus-visible {
+  outline: 1px solid color-mix(in srgb, currentColor 50%, transparent);
+  outline-offset: 2px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tag-chip:is(:hover, :focus-visible, :active) {
+    transform: none;
+  }
+}
+.reduce-motion .tag-chip:is(:hover, :focus-visible, :active) {
+  transform: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   GLASS PANELS AND MODALS
+   The reference glass: clear and strongly blurred, a faint white tint, a thin bright edge and a soft shadow.
+   .glass-panel is a side panel (SidePanel), .glass-modal a centred modal. .panel-backdrop dims only the page
+   left of a side panel, so the panel's blur shows the page itself; .modal-backdrop dims the whole page.
+   ───────────────────────────────────────────────────────────── */
+.glass-panel,
+.glass-modal {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+/* Light theme: on white the bright edge would vanish, and the faint tint leaves dark text unreadable where the
+   panel passes over a dark image or card, so the white is lifted. Dark theme: a soft shadow keeps light text
+   legible over bright patches (thumbnails) in the blur */
+.light .glass-panel,
+.light .glass-modal {
+  background: rgba(255, 255, 255, 0.6);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+/* Light theme: a centred modal over the full dark dim needs nearly opaque white for its grey text, which hides
+   the glass. So the dim is lighter here (see .light .modal-backdrop::before) and the modal keeps a real frost */
+.light .glass-modal {
+  background: rgba(255, 255, 255, 0.62);
+  -webkit-backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
+}
+.dark .glass-panel,
+.dark .glass-modal {
+  text-shadow: 0 1px 2px rgb(0 0 0 / 0.55);
+}
+
+/* Inner cards keep only a hint of fill, so the glass reads as one sheet */
+.glass-panel :is(.bg-theme-surface, .bg-theme-card),
+.glass-modal :is(.bg-theme-surface, .bg-theme-card) {
+  background-color: rgb(255 255 255 / 0.04);
+}
+.light .glass-panel :is(.bg-theme-surface, .bg-theme-card),
+.light .glass-modal :is(.bg-theme-surface, .bg-theme-card) {
+  background-color: rgb(0 0 0 / 0.03);
+}
+
+/* Without backdrop-filter the clear glass would leave text on the bare page */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass-panel,
+  .glass-modal {
+    background: var(--color-surface);
+  }
+}
+
+/* The modal's dim and blur live on a layer beside the modal, not on its parent: a parent with backdrop-filter
+   would become the modal's backdrop root, and the modal's own blur would see only a flat colour */
+.modal-backdrop::before,
+.panel-backdrop {
+  background-color: rgb(4 5 7 / 0.72);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+.light .modal-backdrop::before {
+  background-color: rgb(15 23 42 / 0.3);
+}
+.modal-backdrop::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+}
+
+/* Side panel: slides in from the right (280 ms), then the backdrop fades in (220 ms from 160 ms).
+   Closing reverses it: the backdrop fades out (140 ms), then the panel slides out (220 ms) */
+.side-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(100%, var(--panel-w));
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-width: 0 0 0 1px;
+  animation: panel-in 280ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.side-panel[data-state='closed'] {
+  animation: panel-out 220ms cubic-bezier(0.64, 0, 0.78, 0) 140ms both;
+}
+
+.panel-backdrop {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: min(100%, var(--panel-w));
+  animation: backdrop-in 220ms ease-out 160ms both;
+}
+.panel-backdrop[data-state='closed'] {
+  animation: backdrop-out 140ms ease-in both;
+}
+.panel-backdrop[data-clear] {
+  background-color: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Centred modals fade and scale up; the dim fades on its own layer (opacity on the modal's parent would cut
+   the modal's blur off from the page) */
+.modal-backdrop::before {
+  animation: backdrop-in 200ms ease-out both;
+}
+.glass-modal {
+  animation: modal-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes panel-in {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes panel-out {
+  from { transform: translateX(0); }
+  to { transform: translateX(100%); }
+}
+@keyframes backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+@keyframes modal-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Delays too, which the global .reduce-motion rule leaves in place */
+.reduce-motion :is(.side-panel, .panel-backdrop, .glass-modal),
+.reduce-motion .modal-backdrop::before {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .side-panel,
+  .panel-backdrop,
+  .modal-backdrop::before,
+  .glass-modal {
+    animation: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PANEL CHARTS (src/components/charts)
+   Entrances only, in transform and opacity: scatter dots pop in left to right (their delay is set inline),
+   lines draw (pathLength=1) and areas and heatmap cells fade in. Inside a side panel they wait for the panel's
+   entrance (--chart-delay). Charts leave the classes off under reduced motion; the rules below cover the
+   system setting too.
+   ───────────────────────────────────────────────────────────── */
+.chart-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: chart-pop 260ms cubic-bezier(0.22, 1, 0.36, 1) var(--chart-delay, 0ms) both;
+}
+.chart-fade {
+  animation: chart-fade 400ms ease-out var(--chart-delay, 0ms) both;
+}
+.chart-draw {
+  stroke-dasharray: 1;
+  animation: chart-draw 600ms cubic-bezier(0.22, 1, 0.36, 1) var(--chart-delay, 0ms) both;
+}
+.chart-tooltip {
+  /* Opaque, unlike cards on the glass, so the dots under it don't show through the text */
+  background-color: var(--color-card);
+  text-shadow: none;
+  animation: chart-fade 120ms ease-out both;
+}
+@keyframes chart-pop {
+  from { opacity: 0; transform: scale(0.2); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes chart-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes chart-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.reduce-motion :is(.chart-pop, .chart-fade, .chart-draw, .chart-tooltip) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-pop,
+  .chart-fade,
+  .chart-draw,
+  .chart-tooltip {
+    animation: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MICRO-ANIMATIONS
+   Transform and opacity only, 120–200 ms, all off under reduced motion (the rules at the end of the block).
+   .lift      bordered cards and panel rows rise a pixel on hover; the stronger shadow is a layer whose opacity
+              fades in. Hover only where there is a pointer that hovers, so a tap doesn't leave it raised
+   .lift-flat borderless newspaper cards rise the same pixel, without the shadow (it would outline a square box)
+   .press     buttons and chips settle to 0.97 while pressed
+   .fade-up   one element fades up into place; .stagger does that to its children, 40 ms apart (6 at most).
+              A side panel staggers its sections after its slide-in
+   .badge-pop NEW and count badges pop in from 0.9
+   .tab-ink   the underline that slides to the active tab (useTabInk)
+   .chart-grow bars grow up from their baseline (the other chart entrances are in PANEL CHARTS below)
+   ───────────────────────────────────────────────────────────── */
+/* :where keeps position at zero specificity, so a card that is absolute or sticky stays so */
+:where(.lift) {
+  position: relative;
+}
+.lift,
+.lift-flat {
+  /* The cards' own transitions too (read cards fade to opacity-85, hover borders and backgrounds), in place of transition-all */
+  transition-property: transform, color, background-color, border-color, opacity;
+  transition-duration: 180ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+.lift::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  box-shadow: 0 6px 18px -8px rgb(0 0 0 / 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms ease-out;
+}
+.light .lift::after {
+  box-shadow: 0 6px 16px -8px rgb(0 0 0 / 0.22);
+}
+@media (hover: hover) {
+  .lift:hover,
+  .lift-flat:hover {
+    transform: translateY(-1px);
+  }
+  .lift:hover::after {
+    opacity: 1;
+  }
+}
+
+.press {
+  transition-property: transform, color, background-color, border-color, opacity;
+  transition-duration: 120ms;
+  transition-timing-function: ease-out;
+}
+.press:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+/* Fill-mode backwards only: a transform left on after the entrance would trap fixed-position children */
+.fade-up,
+.stagger > * {
+  animation: fade-up 200ms cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+.stagger > * {
+  animation-delay: calc(var(--stagger-base, 0ms) + var(--stagger-i, 5) * 40ms);
+}
+.stagger > :nth-child(1) { --stagger-i: 0; }
+.stagger > :nth-child(2) { --stagger-i: 1; }
+.stagger > :nth-child(3) { --stagger-i: 2; }
+.stagger > :nth-child(4) { --stagger-i: 3; }
+.stagger > :nth-child(5) { --stagger-i: 4; }
+/* Sections start as the panel's slide (280 ms) settles; charts inside wait until their section is in */
+.side-panel.stagger {
+  --stagger-base: 160ms;
+  --chart-delay: 320ms;
+}
+/* A closing panel leaves its sections as they are */
+.side-panel[data-state='closed'].stagger > * {
+  animation: none;
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+:where(.badge-pop) {
+  display: inline-block;
+}
+.badge-pop {
+  animation: badge-pop 160ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+@keyframes badge-pop {
+  from { opacity: 0; transform: scale(0.9); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* A 1px bar scaled to the active tab's width; useTabInk sets the transform and adds data-ready after placing
+   it once, so the first placement doesn't slide in from the left */
+.tab-ink {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 2px;
+  transform-origin: left;
+  background-color: var(--color-accent);
+  pointer-events: none;
+}
+.tab-ink[data-ready] {
+  transition: transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.tab-ink[data-hidden] {
+  opacity: 0;
+}
+
+.chart-grow {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: chart-grow 260ms cubic-bezier(0.22, 1, 0.36, 1) var(--chart-delay, 0ms) backwards;
+}
+@keyframes chart-grow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+.reduce-motion :is(.fade-up, .stagger > *, .badge-pop, .chart-grow) {
+  animation: none !important;
+}
+.reduce-motion :is(.lift, .lift-flat, .press, .tab-ink),
+.reduce-motion .lift::after {
+  transition: none !important;
+}
+.reduce-motion :is(.lift:hover, .lift-flat:hover, .press:active) {
+  transform: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  .fade-up,
+  .stagger > *,
+  .badge-pop,
+  .chart-grow {
+    animation: none !important;
+  }
+  .lift,
+  .lift-flat,
+  .lift::after,
+  .press,
+  .tab-ink {
+    transition: none !important;
+  }
+  .lift:hover,
+  .lift-flat:hover,
+  .press:active {
+    transform: none !important;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   PRINT STYLESHEET
+   ───────────────────────────────────────────────────────────── */
+@media print {
+  nav,
+  header .interactive-chrome,
+  button,
+  input,
+  select,
+  .no-print {
+    display: none !important;
+  }
+
+  /* The frosted effects have nothing to blur on paper */
+  .modal-backdrop::before,
+  .panel-backdrop,
+  .glass-panel,
+  .glass-modal {
+    background: transparent !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-size: 11pt !important;
+  }
+
+  .main-content-container,
+  .newspaper-container {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  * {
+    border-color: #000000 !important;
+    color: #000000 !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  a {
+    text-decoration: none !important;
+    color: #000000 !important;
+  }
+
+  #print-masthead {
+    display: block !important;
+    text-align: center;
+    border-bottom: 3px double #000000;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  img {
+    filter: grayscale(100%);
+    max-height: 250px;
+    page-break-inside: avoid;
+  }
+
+  article {
+    page-break-inside: avoid;
+    border-bottom: 1px solid #666666 !important;
+    margin-bottom: 1rem !important;
+    padding-bottom: 1rem !important;
+  }
+}
+
+/* TV and Dashboard modes: always dark, independent of the theme */
+.tv-root {
+  background: #07090c;
+  color: #e7ebf0;
+}
+
+/* TV wall: a grid of living tiles (3x2, 4x2, 4x3 or 5x4 by data-size; TvWall sets the tracks); each tile swaps on its own */
+.tv-wall {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  gap: 1.2vmin;
+  padding: 2vmin;
+  /* room under the tiles for the page counter */
+  padding-bottom: calc(1.2vmin + max(0.7rem, 0.9vw) * 1.25);
+}
+.tv-tile {
+  --s: 1; /* type scale: Small grid 0.8, the 2x2 hero 1.25 */
+  --tv-headline-lines: 4;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2vmin;
+  padding: 2.6vmin 2.6vmin 2.6vmin 3.2vmin;
+  background: #0f1319;
+  border-radius: 1vmin;
+}
+.tv-tile[data-size='small'] { --s: 0.8; padding: 2vmin 2vmin 2vmin 2.6vmin; gap: 1vmin; }
+.tv-tile[data-size='xsmall'] { --s: 0.62; padding: 1.5vmin 1.5vmin 1.5vmin 2vmin; gap: 0.7vmin; }
+.tv-tile[data-area='2'] { --tv-headline-lines: 5; }
+.tv-tile[data-area='4'] { --s: 1.25; --tv-headline-lines: 6; }
+.tv-tile-bar { position: absolute; left: 0; top: 0; bottom: 0; width: 0.8vmin; }
+.tv-tile-meta {
+  flex: none;
+  font-size: clamp(calc(0.9rem * var(--s)), calc(1.3vw * var(--s)), calc(3.5rem * var(--s)));
+  color: #8b95a3;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tv-new-badge {
+  display: inline-block;
+  margin-right: 0.6em;
+  padding: 0.1em 0.55em;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+  vertical-align: baseline;
+}
+.tv-tile-headline {
+  margin: 0;
+  font-weight: 700;
+  line-height: 1.15;
+  font-size: clamp(calc(1.2rem * var(--s)), calc(2.2vw * var(--s)), calc(6rem * var(--s)));
+  color: #f2f5f8;
+  overflow-wrap: anywhere;
+  flex: none;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4; /* TvTileCard sets the whole-line count the tile has room for */
+  overflow: hidden;
+}
+.tv-tile-summary-box { flex: 1 1 0; min-height: 0; overflow: hidden; }
+/* The QR code scales with the tile so a phone reads it from 2–3 m: 40% of a wide tile's height, 35% of the hero's, never
+   under 88px. A percentage height on an absolutely placed box is of the tile's height. TvTileCard keeps the headline
+   above it and pads the summary clear of it (by its measured width) */
+.tv-qr-corner {
+  position: absolute;
+  right: 2vmin;
+  bottom: 2vmin;
+  height: max(88px, 40%);
+  aspect-ratio: 1;
+  line-height: 0;
+}
+.tv-tile[data-area='4'] .tv-qr-corner { height: max(88px, 35%); }
+.tv-qr { width: 100%; height: 100%; display: block; }
+.tv-tile-summary {
+  margin: 0;
+  font-size: clamp(calc(1rem * var(--s)), calc(1.5vw * var(--s)), calc(4rem * var(--s)));
+  line-height: 1.3;
+  color: #aab3bf;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4; /* TvTileCard sets the exact whole-line count from the height left */
+  overflow: hidden;
+}
+
+/* Page x of y: small and dim in the bottom-right corner, under the tiles (TV wall and dashboards) */
+/* Bottom-right line of a TV screen: "Updated 14:05" (amber after 1 h, red after 3 h), then the page counter; sits in the walls' bottom padding */
+.tv-footer {
+  position: absolute;
+  right: 2vmin;
+  bottom: 0.6vmin;
+  display: flex;
+  gap: 1.6vw;
+  font-size: max(0.7rem, 0.9vw);
+  line-height: 1.2;
+  color: #5b6573;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+.tv-fresh[data-level='amber'] { color: #f59e0b; }
+.tv-fresh[data-level='red'] { color: #ef4444; }
+
+@keyframes tv-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes tv-slide-in { from { opacity: 0; transform: translateX(-4vw); } to { opacity: 1; transform: none; } }
+@keyframes tv-tile-in { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+@keyframes tv-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes tv-slide-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateX(4vw); } }
+
+/* Per cell (TV tiles and dashboard panels): arriving cells animate in on mount; leaving ones keep their cells and animate out (keyframes, so the
+   in-animation's fill never holds them visible) until removed */
+.tv-wall[data-transition='fade'] .tv-cell { animation: tv-fade-in calc(450ms * var(--k, 1)) ease both; }
+.tv-wall[data-transition='fade'] .tv-cell[data-leaving] { animation: tv-fade-out calc(450ms * var(--k, 1)) ease both; }
+.tv-wall[data-transition='slide'] .tv-cell { animation: tv-slide-in calc(450ms * var(--k, 1)) ease both; }
+.tv-wall[data-transition='slide'] .tv-cell[data-leaving] { animation: tv-slide-out calc(450ms * var(--k, 1)) ease both; }
+.tv-wall[data-transition='reveal'] .tv-cell { animation: tv-tile-in calc(350ms * var(--k, 1)) ease-out both; animation-delay: calc(var(--i, 0) * 120ms * var(--k, 1)); }
+.tv-wall[data-transition='reveal'] .tv-cell[data-leaving] { animation: tv-fade-out calc(250ms * var(--k, 1)) ease both; }
+.tv-wall[data-transition='reduced'] .tv-cell { animation: tv-fade-in 200ms linear both; }
+.tv-wall[data-transition='reduced'] .tv-cell[data-leaving] { animation: tv-fade-out 200ms linear both; }
+
+/* Dashboard mode: panels on the same living wall as TV mode (.tv-wall tracks, .tv-cell transitions); sizes in vw */
+.tv-dash-wall, .tv-slot { font-family: system-ui, sans-serif; }
+.tv-slot {
+  --s: 1; /* type scale for the big numbers: Small grid 0.8, like the tiles */
+  --d: 0ms; /* when the cell itself appears; the arrival animations inside wait for it */
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+}
+.tv-slot[data-size='large'] { --s: 1.4; }
+.tv-slot[data-size='small'] { --s: 0.8; }
+.tv-slot[data-size='xsmall'] { --s: 0.62; }
+.tv-slot > .tv-panel { flex: 1 1 auto; }
+.tv-wall[data-transition='reveal'] .tv-slot { --d: calc(var(--i, 0) * 120ms * var(--k, 1)); }
+.tv-panel {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6vw;
+  padding: 1.1vw 1.3vw;
+  background: #11151b;
+  border-radius: 0.7vw;
+}
+.tv-label { flex: none; font-size: max(0.7rem, 0.95vw); letter-spacing: 0.08em; text-transform: uppercase; color: #7d8a9a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-big { flex: none; font-size: calc(max(1.6rem, 4.6vw) * var(--s, 1)); font-weight: 800; line-height: 1.05; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-big-text { font-size: calc(max(1.2rem, 2.6vw) * var(--s, 1)); line-height: 1.6; }
+.tv-big-text-long { font-size: calc(max(1rem, 1.9vw) * var(--s, 1)); line-height: 1.25; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tv-delta { flex: none; font-size: max(0.7rem, 1vw); color: #8a95a3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-note { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: max(0.8rem, 1.2vw); color: #7d8a9a; }
+.tv-fit { flex: 1 1 0; min-height: 0; overflow: hidden; }
+.tv-row { display: flex; align-items: center; justify-content: space-between; gap: 1vw; font-size: max(0.8rem, 1.25vw); line-height: 1.5; padding: 0.35vw 0; border-bottom: 1px solid #1c222b; white-space: nowrap; box-sizing: content-box; }
+.tv-row-main { flex: 1 1 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tv-row-meta { flex: none; font-size: 0.85em; color: #8a95a3; }
+.tv-score { color: #fca5a5; font-weight: 700; }
+.tv-pill { flex: none; font-size: 0.75em; padding: 0.1vw 0.6vw; border-radius: 0.6vw; font-weight: 700; }
+.tv-kev { background: #7f1d1d; color: #fecaca; }
+.tv-poc { background: #78350f; color: #fde68a; }
+.tv-hbar { justify-content: flex-start; }
+.tv-hbar-name { flex: none; width: 11vw; overflow: hidden; text-overflow: ellipsis; }
+.tv-hbar-track { flex: 1 1 0; min-width: 0; }
+.tv-hbar-track i { display: block; height: 0.8vw; border-radius: 0.2vw; }
+.tv-hbar-n { flex: none; min-width: 2.5vw; text-align: right; font-variant-numeric: tabular-nums; color: #aab3bf; }
+.tv-chart { flex: 1 1 0; min-height: 0; width: 100%; display: block; overflow: hidden; }
+.tv-chart > svg { display: block; }
+/* A number panel: the figure and its note sit together in the middle of the cell */
+.tv-stat { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.6vw; padding-bottom: 1.5vw; }
+.tv-stat .tv-delta { font-size: calc(max(0.7rem, 1vw) * max(1, var(--s, 1))); }
+.tv-legend { flex: none; font-size: max(0.7rem, 1vw); color: #8a95a3; }
+.tv-panel-sub { flex: none; font-size: max(0.8rem, 1.3vw); color: #aab3bf; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tv-followed { background: #1e3a5f; color: #bfdbfe; }
+.tv-epss { flex: none; font-size: 0.8em; color: #8a95a3; font-variant-numeric: tabular-nums; }
+/* Vertical bars: value on top, bar, label under */
+.tv-vbars { flex: 1 1 0; min-height: 0; display: flex; align-items: stretch; gap: 0.6vw; }
+.tv-vbar { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0.3vw; }
+.tv-vbar-n { flex: none; font-size: max(0.7rem, 1vw); color: #aab3bf; font-variant-numeric: tabular-nums; }
+.tv-vbar-track { flex: 1 1 0; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: center; }
+.tv-vbar-track i { display: block; width: 72%; border-radius: 0.2vw 0.2vw 0 0; }
+.tv-vbar-label { flex: none; font-size: max(0.65rem, 0.9vw); color: #8a95a3; white-space: nowrap; }
+
+/* Arrival animations inside a panel (transform and opacity only); --j is the bar/row index, --d the cell's own delay */
+@keyframes tv-grow-x { from { transform: scaleX(0); } to { transform: none; } }
+@keyframes tv-grow-y { from { transform: scaleY(0); } to { transform: none; } }
+@keyframes tv-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes tv-row-in { from { opacity: 0; transform: translateY(0.6vw); } to { opacity: 1; transform: none; } }
+.tv-grow-x { transform-origin: left center; animation: tv-grow-x calc(700ms * var(--k, 1)) cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--d, 0ms) + var(--j, 0) * 60ms * var(--k, 1)); }
+.tv-grow-y { transform-origin: center bottom; transform-box: fill-box; animation: tv-grow-y calc(700ms * var(--k, 1)) cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: calc(var(--d, 0ms) + var(--j, 0) * 60ms * var(--k, 1)); }
+.tv-draw { stroke-dasharray: 1 1; animation: tv-draw calc(900ms * var(--k, 1)) ease-out both; animation-delay: var(--d, 0ms); }
+.tv-area-in { animation: tv-fade-in calc(400ms * var(--k, 1)) ease both; animation-delay: calc(var(--d, 0ms) + 800ms * var(--k, 1)); }
+.tv-row-in { animation: tv-row-in calc(400ms * var(--k, 1)) ease-out both; animation-delay: calc(var(--d, 0ms) + var(--j, 0) * 70ms * var(--k, 1)); }
+.tv-wall[data-transition='reduced'] :is(.tv-grow-x, .tv-grow-y, .tv-draw, .tv-area-in, .tv-row-in, .tv-map-in) { animation: none; }
+
+/* World map panel: the map fills the box, the top 3 sit under it; shaded countries fade in by rank (--j) */
+.tv-map { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; gap: 0.6vw; }
+.tv-map svg { flex: 1 1 0; min-height: 0; width: 100%; display: block; }
+.tv-map-top { flex: none; display: flex; justify-content: center; gap: 2.4vw; font-size: max(0.8rem, 1.25vw); color: #cbd3dd; white-space: nowrap; overflow: hidden; }
+.tv-map-top b { color: #c084fc; margin-left: 0.3em; }
+.tv-map-in { animation: tv-fade-in calc(600ms * var(--k, 1)) ease both; animation-delay: calc(min(var(--j, 0), 12) * 60ms * var(--k, 1)); }

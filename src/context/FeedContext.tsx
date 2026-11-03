@@ -1,0 +1,809 @@
+import React, { createContext, useContext, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { ActorsData, Article, CveIntel, DataSourceStatus, EntitiesData, Feed, FeedHealth, IncidentData, MsrcData, RansomwareIntel, StatsData, TrendsData, VulnData } from '../types';
+import {
+  getAllArticlesFromDB,
+  saveArticlesToDB,
+  updateArticleStateInDB,
+  markAllArticlesAsReadInDB,
+  getFeedsFromDB,
+  saveFeedsToDB,
+  saveSingleFeedToDB,
+  deleteFeedFromDB,
+  getAllFeedHealthFromDB,
+  saveFeedHealthToDB,
+  deleteArticlesFromDB,
+  getArticleStateIds,
+  getStoredValue,
+  saveStoredValue
+} from '../services/storage/indexeddb';
+import { loadActors, loadEntities, loadMsrc, loadRansomwareIntel, loadSnapshot, loadStats, loadTrends, loadVulnData } from '../services/snapshot';
+import { buildEntityMatcher } from '../services/intelligence/entityLinks';
+import { EntityMatcherContext } from '../hooks/useEntityMatcher';
+import { createSnapshotLoader } from '../services/snapshotLoader';
+import { safeHttpUrl, sanitizeStoredArticle } from '../services/rss/sanitizer';
+import { fetchAllFeeds, fetchFeed, resolveCanonicalFeedUrl } from '../services/rss/fetcher';
+import { rescoreArticle } from '../services/rss/parser';
+import { deduplicateArticles } from '../services/articles/deduplication';
+import { feedsInUse, inUse, withoutDisabledCategories } from '../services/articles/categories';
+import { findDemoBookmarks, isExpired, mergeFetchedArticles } from '../services/articles/merge';
+import { useSettings } from './SettingsContext';
+
+interface RefreshProgress {
+  completed: number;
+  total: number;
+  currentFeedName?: string;
+}
+
+interface RefreshOptions {
+  // Load the server-built snapshot first and only fetch live the feeds it doesn't cover
+  useSnapshot?: boolean;
+  // Skip feeds that keep failing (see BACKOFF_*) instead of waiting on them every time
+  skipBackedOff?: boolean;
+}
+
+// A feed that failed this many refreshes in a row is only retried once per BACKOFF_RETRY_MS
+// during automatic refreshes; manual refreshes still try it.
+const BACKOFF_AFTER_FAILURES = 5;
+const BACKOFF_RETRY_MS = 60 * 60 * 1000;
+
+export function isBackedOff(health: FeedHealth | undefined, now = Date.now()): boolean {
+  if (!health || (health.consecutiveFailures ?? 0) < BACKOFF_AFTER_FAILURES) return false;
+  return now - new Date(health.lastFetchedAt || 0).getTime() < BACKOFF_RETRY_MS;
+}
+
+interface FeedContextType {
+  feeds: Feed[];
+  cveIntel: Record<string, CveIntel>;
+  snapshotGeneratedAt: string | null; // when the server snapshot in use was built by the GitHub Action
+  incidents: IncidentData | null; // ransomware leak-site victims + HIBP breaches from the snapshot
+  vulns: VulnData | null; // KEV catalog, recent NVD CVEs, GitHub advisories and top EPSS (see ensureVulns)
+  ensureVulns: () => Promise<void>; // loads data/vulns.json if this snapshot's copy isn't loaded yet; use the useVulns hook
+  dataSources: DataSourceStatus[]; // how each external source fared in the snapshot run
+  ransomwareIntel: RansomwareIntel | null; // group profiles, ATT&CK, linked CVEs, public reports, payments
+  ensureRansomwareIntel: () => Promise<void>; // like ensureVulns, for data/ransomware.json
+  msrc: MsrcData | null; // the latest Patch Tuesday releases (MSRC CVRF)
+  ensureMsrc: () => Promise<MsrcData | null>; // like ensureVulns, for data/msrc.json; use the useMsrc hook
+  actors: ActorsData | null; // threat actor and malware profiles (ATT&CK, Malpedia)
+  ensureActors: () => Promise<ActorsData | null>; // like ensureMsrc, for data/actors.json; resolves to the loaded data
+  trends: TrendsData | null; // daily mention counts per entity, up to 730 days (older weeks rolled up)
+  stats: StatsData | null; // daily counts for the dashboards, up to 400 days
+  ensureStats: () => Promise<StatsData | null>; // like ensureTrends, for data/stats.json; use the useStats hook
+  ensureTrends: () => Promise<TrendsData | null>; // like ensureMsrc, for data/trends.json; use the useTrends hook
+  articles: Article[];
+  feedHealth: Record<string, FeedHealth>;
+  isRefreshing: boolean;
+  initialSyncDone: boolean; // stored data is loaded and the first refresh (if any) has settled
+  refreshProgress: RefreshProgress;
+  lastUpdated: Date | null;
+  isOffline: boolean;
+  activeArticle: Article | null;
+  setActiveArticle: (article: Article | null) => void;
+  refreshFeeds: (targetFeedId?: string) => Promise<void>;
+  refreshFailedFeeds: () => Promise<void>;
+  toggleFeedEnabled: (feedId: string) => Promise<void>;
+  addCustomFeed: (newFeed: Omit<Feed, 'id'>) => Promise<void>;
+  addCustomFeeds: (newFeeds: Omit<Feed, 'id'>[]) => Promise<number>;
+  updateFeed: (feed: Feed) => Promise<void>;
+  removeFeed: (feedId: string) => Promise<void>;
+  resetFeedsToDefault: () => Promise<void>;
+  toggleBookmark: (articleId: string) => Promise<void>;
+  setBookmarkFolder: (articleId: string, folder: string) => Promise<void>;
+  setBookmarkNotes: (articleId: string, notes: string) => Promise<void>;
+  toggleRead: (articleId: string) => Promise<void>;
+  markViewed: (articleId: string) => Promise<void>;
+  markAllAsRead: (ids?: string[]) => Promise<void>;
+  addCustomTagToArticle: (articleId: string, tag: string) => Promise<void>;
+}
+
+const FeedContext = createContext<FeedContextType | undefined>(undefined);
+
+export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { settings } = useSettings();
+  const [feeds, setFeeds] = useState<Feed[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
+  const [feedHealth, setFeedHealth] = useState<Record<string, FeedHealth>>({});
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [initialSyncDone, setInitialSyncDone] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState<RefreshProgress>({ completed: 0, total: 0 });
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const [activeArticle, setActiveArticle] = useState<Article | null>(null);
+  const [cveIntel, setCveIntel] = useState<Record<string, CveIntel>>({});
+  const [snapshotGeneratedAt, setSnapshotGeneratedAt] = useState<string | null>(null);
+  const [incidents, setIncidents] = useState<IncidentData | null>(null);
+  const [vulns, setVulns] = useState<VulnData | null>(null);
+  const [dataSources, setDataSources] = useState<DataSourceStatus[]>([]);
+  const [ransomwareIntel, setRansomwareIntel] = useState<RansomwareIntel | null>(null);
+  const [msrc, setMsrc] = useState<MsrcData | null>(null);
+  const [actors, setActors] = useState<ActorsData | null>(null);
+  const [trends, setTrends] = useState<TrendsData | null>(null);
+  const [stats, setStats] = useState<StatsData | null>(null);
+  const [entities, setEntities] = useState<EntitiesData | null>(null);
+
+  // Latest values for async work started from older renders (init timer, auto-refresh interval)
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
+  const articlesRef = useRef(articles);
+  articlesRef.current = articles;
+  const feedsRef = useRef(feeds);
+  feedsRef.current = feeds;
+  const feedHealthRef = useRef(feedHealth);
+  feedHealthRef.current = feedHealth;
+  const cveIntelRef = useRef(cveIntel);
+  cveIntelRef.current = cveIntel;
+
+  // Monitor online / offline connectivity
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // Initialize feeds and cached articles from IndexedDB
+  const initLoadedRef = useRef(false);
+
+  const initData = useCallback(async () => {
+    try {
+      // 1. Load feeds
+      let storedFeeds = await getFeedsFromDB();
+      try {
+        const res = await fetch(`${import.meta.env.BASE_URL}data/feeds.json`);
+        if (res.ok) {
+          const data = await res.json();
+          const defaultFeeds: Feed[] = data.feeds || [];
+          // Default feeds retired upstream (broken at the source) are dropped from existing installs too
+          const retired = new Set<string>(Array.isArray(data.retiredFeedIds) ? data.retiredFeedIds : []);
+          if (storedFeeds && retired.size > 0) {
+            const toRetire = storedFeeds.filter(f => !f.isCustom && retired.has(f.id));
+            for (const f of toRetire) await deleteFeedFromDB(f.id); // also drops its health record
+            storedFeeds = storedFeeds.filter(f => !toRetire.includes(f));
+          }
+          if (!storedFeeds || storedFeeds.length === 0) {
+            storedFeeds = defaultFeeds;
+            await saveFeedsToDB(storedFeeds);
+          } else {
+            // Automatically merge newly introduced default feeds while preserving user customizations
+            const existingIds = new Set(storedFeeds.map(f => f.id));
+            const newFeeds = defaultFeeds.filter(f => !existingIds.has(f.id));
+            
+            // Also update any existing default feed whose URL was corrected/updated upstream
+            const defaultMap = new Map(defaultFeeds.map(f => [f.id, f]));
+            storedFeeds = storedFeeds.map(stored => {
+              const canonicalUrl = resolveCanonicalFeedUrl(stored.url);
+              if (canonicalUrl !== stored.url) {
+                return { ...stored, url: canonicalUrl };
+              }
+              const def = defaultMap.get(stored.id);
+              if (def && def.url !== stored.url && !stored.isCustom) {
+                return { ...stored, url: def.url, category: def.category, tags: def.tags };
+              }
+              return stored;
+            });
+
+            if (newFeeds.length > 0) {
+              storedFeeds = [...storedFeeds, ...newFeeds];
+            }
+            await saveFeedsToDB(storedFeeds);
+          }
+        }
+      } catch (fetchErr) {
+        console.warn('Could not load /data/feeds.json:', fetchErr);
+      }
+      storedFeeds = storedFeeds || [];
+      setFeeds(storedFeeds);
+
+      // 2. Load health
+      const healthMap = await getAllFeedHealthFromDB();
+      setFeedHealth(healthMap);
+
+      // 3. Load articles, dropping expired ones and those whose feed was removed (bookmarks always stay)
+      const maxAgeDays = settingsRef.current.maxArticleAgeDays ?? 30;
+      const feedById = new Map(storedFeeds.map(f => [f.id, f]));
+      const isKept = (a: Article) => a.bookmarked || (feedById.has(a.sourceId) && !isExpired(a, maxAgeDays));
+
+      let seeds: Article[] = [];
+      try {
+        const seedRes = await fetch(`${import.meta.env.BASE_URL}data/seed-articles.json`);
+        if (seedRes.ok) {
+          const seedData: unknown = await seedRes.json();
+          if (Array.isArray(seedData)) {
+            seeds = seedData.map(sanitizeStoredArticle).filter((s): s is Article => s !== null);
+          }
+        }
+      } catch (seedErr) {
+        console.warn('Could not load /data/seed-articles.json:', seedErr);
+      }
+
+      let cachedArticles = await getAllArticlesFromDB();
+
+      // Earlier versions shipped three seed articles pre-bookmarked as a demo; clear those (not the user's own)
+      const demoBookmarks = findDemoBookmarks(cachedArticles, new Set(seeds.map(s => s.id)), await getArticleStateIds());
+      if (demoBookmarks.length > 0) {
+        const cleared = demoBookmarks.map(a => ({ ...a, bookmarked: false, bookmarkedAt: undefined, bookmarkFolder: undefined }));
+        await saveArticlesToDB(cleared);
+        const clearedById = new Map(cleared.map(a => [a.id, a]));
+        cachedArticles = cachedArticles.map(a => clearedById.get(a.id) ?? a);
+      }
+
+      let storedArticles = cachedArticles.filter(isKept);
+      const keptIds = new Set(storedArticles.map(a => a.id));
+      await deleteArticlesFromDB(cachedArticles.filter(a => !keptIds.has(a.id)).map(a => a.id));
+
+      // Seed articles fill the page on first run (whatever their age; the first refresh prunes them).
+      // Later, only seeds that are new and still in range are added.
+      const isFirstRun = cachedArticles.length === 0;
+      const newSeeds = seeds.filter(s => !keptIds.has(s.id) && (isFirstRun || isKept(s)));
+      if (newSeeds.length > 0) {
+        storedArticles = deduplicateArticles([...storedArticles, ...newSeeds]);
+        const addedIds = new Set(storedArticles.map(a => a.id));
+        await saveArticlesToDB(newSeeds.filter(s => addedIds.has(s.id)));
+      }
+      const storedIntel = (await getStoredValue<Record<string, CveIntel>>('cveIntel')) || {};
+      cveIntelRef.current = storedIntel;
+      setCveIntel(storedIntel);
+      setSnapshotGeneratedAt(await getStoredValue<string>('snapshotGeneratedAt'));
+      setIncidents(await getStoredValue<IncidentData>('incidents'));
+      // ensureVulns may already have fetched a fresher copy while the stored data was loading
+      const storedVulns = await getStoredValue<VulnData>('vulns');
+      setVulns(prev => prev ?? storedVulns);
+      setDataSources((await getStoredValue<DataSourceStatus[]>('dataSources')) || []);
+      setRansomwareIntel(await getStoredValue<RansomwareIntel>('ransomwareIntel'));
+      // Patch Tuesday, actor and trend data aren't read here: ensureMsrc/ensureActors/ensureTrends load them
+      // when a view needs them and read the stored copy only when offline, so they don't hold up the articles
+
+      // Re-apply current tagging/severity rules, and drop non-http(s) links stored by older versions
+      setArticles(storedArticles.map(a => ({
+        ...rescoreArticle(a, feedById.get(a.sourceId), storedIntel),
+        url: safeHttpUrl(a.url),
+        image: safeHttpUrl(a.image) || undefined,
+      })));
+
+      // 4. Initial fetch if device is online to ingest latest dispatches
+      if (navigator.onLine && storedFeeds.length > 0) {
+        const initialFeeds = storedFeeds;
+        setTimeout(async () => {
+          try {
+            await refreshFeedsInternal(initialFeeds, undefined, { useSnapshot: true, skipBackedOff: true });
+          } finally {
+            setInitialSyncDone(true);
+          }
+        }, 300);
+      } else {
+        setInitialSyncDone(true);
+      }
+    } catch (err) {
+      console.error('Initialization error:', err);
+      setInitialSyncDone(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!initLoadedRef.current) {
+      initLoadedRef.current = true;
+      initData();
+    }
+  }, [initData]);
+
+  // Synchronous in-flight guard: the isRefreshing state is captured per render, so callers
+  // holding an older closure (init timer, auto-refresh interval) would otherwise see stale `false`.
+  const refreshInFlightRef = useRef(false);
+
+  // Core refresh logic. Reads settings/articles through refs, so it is safe to call from any closure.
+  const refreshFeedsInternal = useCallback(async (feedsToFetch: Feed[], singleFeedId?: string, options: RefreshOptions = {}) => {
+    if (refreshInFlightRef.current || !navigator.onLine) return;
+
+    refreshInFlightRef.current = true;
+    setIsRefreshing(true);
+
+    const settings = settingsRef.current;
+    const maxItems = settings.maxArticlesPerFeed ?? 25;
+    const maxAgeDays = settings.maxArticleAgeDays ?? 30;
+
+    const feedById = new Map(feedsRef.current.map(f => [f.id, f]));
+
+    // Each feed's health also tracks how many refreshes in a row it has failed
+    const withFailureCount = (h: FeedHealth): FeedHealth => ({
+      ...h,
+      consecutiveFailures: h.status === 'healthy' ? 0 : (feedHealthRef.current[h.feedId]?.consecutiveFailures ?? 0) + 1,
+    });
+
+    const applyFetched = async (fetchedItems: Article[]) => {
+      // Score CVE-bearing articles with the latest KEV/EPSS data
+      const intel = cveIntelRef.current;
+      const newItems = fetchedItems.map(a => (a.cves?.length ? rescoreArticle(a, feedById.get(a.sourceId), intel) : a));
+      // Work out the DB changes from the ref snapshot: title/date-based dedup and the age cutoff
+      // don't depend on read state, so it agrees with the state update below.
+      const before = articlesRef.current;
+      // Articles of turned-off categories stay in state but never win a near-duplicate check over shown ones
+      const shown = inUse(feedsRef.current, settings.disabledCategories ?? []);
+      const mergedSnapshot = mergeFetchedArticles(before, newItems, maxAgeDays, shown);
+      const after = new Set(mergedSnapshot.map(a => a.id));
+      // Progressive merges can run several times before React re-renders; keep the ref current for the next one
+      articlesRef.current = mergedSnapshot;
+      setArticles(prev => mergeFetchedArticles(prev, newItems, maxAgeDays, shown));
+      // Persist fetched items that survived (near-duplicates of existing ones are dropped)
+      await saveArticlesToDB(newItems.filter(a => after.has(a.id)));
+      // Delete articles the merge pruned (expired), so they don't come back on reload
+      await deleteArticlesFromDB(before.filter(a => !after.has(a.id)).map(a => a.id));
+    };
+
+    const applyCveIntel = async (intel: Record<string, CveIntel>) => {
+      cveIntelRef.current = intel;
+      setCveIntel(intel);
+      const rescore = (list: Article[]) => list.map(a => (a.cves?.length ? rescoreArticle(a, feedById.get(a.sourceId), intel) : a));
+      articlesRef.current = rescore(articlesRef.current);
+      setArticles(prev => rescore(prev));
+      await saveStoredValue('cveIntel', intel);
+    };
+
+    try {
+      if (singleFeedId) {
+        const feed = feedsToFetch.find(f => f.id === singleFeedId);
+        if (!feed) return;
+
+        setRefreshProgress({ completed: 0, total: 1, currentFeedName: feed.name });
+        const { articles: newItems, health } = await fetchFeed(
+          feed,
+          settings.proxyMode,
+          settings.customProxyUrl,
+          maxItems,
+          maxAgeDays
+        );
+        
+        const counted = withFailureCount(health);
+        await saveFeedHealthToDB(counted);
+        setFeedHealth(prev => ({ ...prev, [feed.id]: counted }));
+
+        if (newItems.length > 0) {
+          await applyFetched(newItems);
+        }
+        setRefreshProgress({ completed: 1, total: 1 });
+      } else {
+        // Turned-off categories are not fetched at all
+        feedsToFetch = feedsInUse(feedsToFetch, settings.disabledCategories ?? []);
+        let fetchedLive = false;
+
+        if (options.useSnapshot && settings.dataSource !== 'live') {
+          const snapshot = await loadSnapshot();
+          if (snapshot) {
+            await applyCveIntel(snapshot.cveIntel);
+            // Only feeds the snapshot fetched successfully count as covered; ones that failed on GitHub's
+            // servers (some sites block data-centre IPs) are tried live through the gateway below
+            const covered = new Set(feedsToFetch.filter(f => f.enabled && snapshot.feedHealth[f.id]?.status === 'healthy').map(f => f.id));
+            const healths = [...covered].map(id => snapshot.feedHealth[id]);
+            setFeedHealth(prev => ({ ...prev, ...Object.fromEntries(healths.map(h => [h.feedId, h])) }));
+            for (const h of healths) await saveFeedHealthToDB(h);
+            await applyFetched(snapshot.articles.filter(a => covered.has(a.sourceId)));
+            setLastUpdated(new Date(snapshot.generatedAt));
+            setSnapshotGeneratedAt(snapshot.generatedAt);
+            await saveStoredValue('snapshotGeneratedAt', snapshot.generatedAt);
+            if (snapshot.incidents) {
+              setIncidents(snapshot.incidents);
+              await saveStoredValue('incidents', snapshot.incidents);
+            }
+            setDataSources(snapshot.sources);
+            await saveStoredValue('dataSources', snapshot.sources);
+            feedsToFetch = feedsToFetch.filter(f => !covered.has(f.id));
+          }
+        }
+
+        if (options.skipBackedOff) {
+          feedsToFetch = feedsToFetch.filter(f => !isBackedOff(feedHealthRef.current[f.id]));
+        }
+
+        const activeList = feedsToFetch.filter(f => f.enabled);
+        if (activeList.length > 0) {
+          fetchedLive = true;
+          setRefreshProgress({ completed: 0, total: activeList.length });
+
+          // Merge results while the refresh runs instead of after the slowest feed. Buffered and flushed
+          // about once a second: merging per feed would re-render (and re-cluster) the page 100+ times.
+          let pendingArticles: Article[] = [];
+          let pendingHealth: FeedHealth[] = [];
+          let flushTimer: ReturnType<typeof setTimeout> | null = null;
+          let flushChain = Promise.resolve();
+
+          const flush = () => {
+            if (flushTimer) {
+              clearTimeout(flushTimer);
+              flushTimer = null;
+            }
+            const items = pendingArticles;
+            const healths = pendingHealth;
+            pendingArticles = [];
+            pendingHealth = [];
+            // Chained so DB writes from consecutive flushes never interleave
+            flushChain = flushChain.then(async () => {
+              if (healths.length > 0) {
+                setFeedHealth(prev => ({ ...prev, ...Object.fromEntries(healths.map(h => [h.feedId, h])) }));
+                for (const h of healths) await saveFeedHealthToDB(h);
+              }
+              if (items.length > 0) await applyFetched(items);
+            }).catch(err => {
+              // One failed flush must not stop later ones from applying
+              console.error('Failed to apply refresh results:', err);
+            });
+            return flushChain;
+          };
+
+          await fetchAllFeeds(
+            feedsToFetch,
+            settings.proxyMode,
+            settings.customProxyUrl,
+            (completed, total, latestHealth, feedArticles) => {
+              const curFeed = feedsToFetch.find(f => f.id === latestHealth.feedId);
+              setRefreshProgress({ completed, total, currentFeedName: curFeed?.name });
+              pendingHealth.push(withFailureCount(latestHealth));
+              pendingArticles.push(...feedArticles);
+              if (!flushTimer) flushTimer = setTimeout(flush, 1000);
+            },
+            maxItems,
+            maxAgeDays
+          );
+
+          await flush();
+        }
+        if (fetchedLive) setLastUpdated(new Date());
+      }
+      if (singleFeedId) setLastUpdated(new Date());
+    } catch (err) {
+      console.error('Failed to refresh feeds:', err);
+    } finally {
+      refreshInFlightRef.current = false;
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  const refreshFeeds = useCallback(async (targetFeedId?: string) => {
+    await refreshFeedsInternal(feedsRef.current, targetFeedId, { useSnapshot: true });
+  }, [refreshFeedsInternal]);
+
+  const refreshFailedFeeds = useCallback(async () => {
+    const failedList = feedsRef.current.filter(f => {
+      const h = feedHealthRef.current[f.id];
+      return f.enabled && (!h || h.status !== 'healthy');
+    });
+    if (failedList.length === 0) return;
+    await refreshFeedsInternal(failedList);
+  }, [refreshFeedsInternal]);
+
+  // Auto-refresh: refetch enabled feeds whose last successful fetch is older than the per-feed
+  // cooldown. Basing this on fetch time (not article age) means busy feeds still get refreshed.
+  useEffect(() => {
+    if (settings.autoRefreshMinutes <= 0) return;
+
+    const timer = setInterval(() => {
+      if (!navigator.onLine) return;
+      // Snapshot mode: reload the (regularly rebuilt) snapshot; only feeds it lacks are fetched live
+      if (settingsRef.current.dataSource !== 'live') {
+        refreshFeedsInternal(feedsRef.current, undefined, { useSnapshot: true, skipBackedOff: true });
+        return;
+      }
+      const cooldownHours = settingsRef.current.autoRefreshFeedCooldownHours ?? 1;
+      const cutoffMs = Date.now() - cooldownHours * 60 * 60 * 1000;
+
+      const feedsToFetch = feedsRef.current.filter(feed => {
+        if (!feed.enabled) return false;
+        if (cooldownHours <= 0) return true;
+        const lastSuccess = feedHealthRef.current[feed.id]?.lastSuccessAt;
+        return !lastSuccess || new Date(lastSuccess).getTime() <= cutoffMs;
+      });
+
+      if (feedsToFetch.length === 0) {
+        console.log(`[Auto-Refresh] All feeds fetched within the last ${cooldownHours}h. Skipping cycle.`);
+        return;
+      }
+      refreshFeedsInternal(feedsToFetch, undefined, { skipBackedOff: true });
+    }, settings.autoRefreshMinutes * 60 * 1000);
+
+    return () => clearInterval(timer);
+  }, [settings.autoRefreshMinutes, refreshFeedsInternal]);
+
+  // Feed management operations
+  const toggleFeedEnabled = useCallback(async (feedId: string) => {
+    const updated = feedsRef.current.map(f => f.id === feedId ? { ...f, enabled: !f.enabled } : f);
+    setFeeds(updated);
+    await saveFeedsToDB(updated);
+  }, []);
+
+  // Adds feeds in one state update (e.g. an OPML import), skipping URLs that are already subscribed.
+  // Returns how many feeds were actually added.
+  const addCustomFeeds = useCallback(async (newFeedsData: Omit<Feed, 'id'>[]): Promise<number> => {
+    const knownUrls = new Set(feedsRef.current.map(f => resolveCanonicalFeedUrl(f.url)));
+    const added: Feed[] = [];
+    for (const data of newFeedsData) {
+      const url = resolveCanonicalFeedUrl(data.url);
+      if (knownUrls.has(url)) continue;
+      knownUrls.add(url);
+      added.push({
+        ...data,
+        url,
+        id: `custom-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        isCustom: true
+      });
+    }
+    if (added.length === 0) return 0;
+
+    setFeeds(prev => [...prev, ...added]);
+    for (const feed of added) {
+      await saveSingleFeedToDB(feed);
+    }
+    // Fetch the new feeds immediately
+    refreshFeedsInternal(added);
+    return added.length;
+  }, [refreshFeedsInternal]);
+
+  const addCustomFeed = useCallback(async (newFeedData: Omit<Feed, 'id'>) => {
+    await addCustomFeeds([newFeedData]);
+  }, [addCustomFeeds]);
+
+  const updateFeed = useCallback(async (updatedFeed: Feed) => {
+    const canonicalFeed: Feed = {
+      ...updatedFeed,
+      url: resolveCanonicalFeedUrl(updatedFeed.url)
+    };
+    setFeeds(prev => prev.map(f => f.id === canonicalFeed.id ? canonicalFeed : f));
+    await saveSingleFeedToDB(canonicalFeed);
+  }, []);
+
+  const removeFeed = useCallback(async (feedId: string) => {
+    setFeeds(prev => prev.filter(f => f.id !== feedId));
+    await deleteFeedFromDB(feedId);
+    setFeedHealth(prev => {
+      const copy = { ...prev };
+      delete copy[feedId];
+      return copy;
+    });
+    // The feed's articles go with it, except bookmarks
+    const orphaned = articlesRef.current.filter(a => a.sourceId === feedId && !a.bookmarked).map(a => a.id);
+    const orphanedSet = new Set(orphaned);
+    setArticles(prev => prev.filter(a => !orphanedSet.has(a.id)));
+    await deleteArticlesFromDB(orphaned);
+  }, []);
+
+  const resetFeedsToDefault = useCallback(async () => {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}data/feeds.json`);
+      if (res.ok) {
+        const data = await res.json();
+        const defaultFeeds: Feed[] = data.feeds || [];
+        setFeeds(defaultFeeds);
+        await saveFeedsToDB(defaultFeeds);
+        refreshFeedsInternal(defaultFeeds);
+      }
+    } catch (err) {
+      console.error('Failed to reset feeds:', err);
+    }
+  }, [refreshFeedsInternal]);
+
+  // Article state operations: apply a patch to the article list and to the open reader copy
+  const patchArticle = useCallback((articleId: string, patch: Partial<Article>) => {
+    setArticles(prev => prev.map(a => a.id === articleId ? { ...a, ...patch } : a));
+    setActiveArticle(prev => prev && prev.id === articleId ? { ...prev, ...patch } : prev);
+  }, []);
+
+  const findArticle = (articleId: string) => articlesRef.current.find(a => a.id === articleId);
+
+  const toggleBookmark = useCallback(async (articleId: string) => {
+    const target = findArticle(articleId);
+    if (!target) return;
+
+    const newBookmarked = !target.bookmarked;
+    const folder = newBookmarked ? (target.bookmarkFolder || 'General') : target.bookmarkFolder;
+    await updateArticleStateInDB(articleId, { bookmarked: newBookmarked, bookmarkFolder: folder });
+    patchArticle(articleId, { bookmarked: newBookmarked, bookmarkFolder: folder });
+  }, [patchArticle]);
+
+  const setBookmarkFolder = useCallback(async (articleId: string, folder: string) => {
+    await updateArticleStateInDB(articleId, { bookmarkFolder: folder, bookmarked: true });
+    patchArticle(articleId, { bookmarkFolder: folder, bookmarked: true });
+  }, [patchArticle]);
+
+  const setBookmarkNotes = useCallback(async (articleId: string, notes: string) => {
+    await updateArticleStateInDB(articleId, { bookmarkNotes: notes });
+    patchArticle(articleId, { bookmarkNotes: notes });
+  }, [patchArticle]);
+
+  const toggleRead = useCallback(async (articleId: string) => {
+    const target = findArticle(articleId);
+    if (!target) return;
+
+    const newRead = !target.read;
+    await updateArticleStateInDB(articleId, { read: newRead });
+    patchArticle(articleId, { read: newRead });
+  }, [patchArticle]);
+
+  const markViewed = useCallback(async (articleId: string) => {
+    const target = findArticle(articleId);
+    if (!target || target.viewed) return;
+
+    await updateArticleStateInDB(articleId, { viewed: true, read: true });
+    patchArticle(articleId, { viewed: true, read: true });
+  }, [patchArticle]);
+
+  const markAllAsRead = useCallback(async (ids?: string[]) => {
+    await markAllArticlesAsReadInDB(ids);
+    const targetIds = ids ? new Set(ids) : null;
+    setArticles(prev => prev.map(a => (!targetIds || targetIds.has(a.id)) ? { ...a, read: true } : a));
+  }, []);
+
+  const addCustomTagToArticle = useCallback(async (articleId: string, tag: string) => {
+    const cleanTag = tag.trim();
+    if (!cleanTag) return;
+
+    const target = findArticle(articleId);
+    if (!target) return;
+
+    const currentTags = target.customTags || [];
+    if (currentTags.includes(cleanTag)) return;
+
+    const updatedTags = [...currentTags, cleanTag];
+    await updateArticleStateInDB(articleId, { customTags: updatedTags });
+    patchArticle(articleId, { customTags: updatedTags });
+  }, [patchArticle]);
+
+  // Vulnerability data is a separate file, fetched the first time a view needs it and again whenever a newer
+  // snapshot has been loaded since; the stored copy shows straight away (and offline) in the meantime
+  const vulnsRef = useRef<VulnData | null>(null);
+  vulnsRef.current = vulns;
+  const snapshotAtRef = useRef<string | null>(null);
+  snapshotAtRef.current = snapshotGeneratedAt;
+  const vulnsRequest = useRef<Promise<void> | null>(null);
+  const ensureVulns = useCallback(() => {
+    const current = vulnsRef.current;
+    if (current?.generatedAt && current.generatedAt === snapshotAtRef.current) return Promise.resolve();
+    if (!vulnsRequest.current) {
+      vulnsRequest.current = loadVulnData()
+        .then(async (data) => {
+          if (!data) return;
+          setVulns(data);
+          await saveStoredValue('vulns', data);
+        })
+        .finally(() => { vulnsRequest.current = null; });
+    }
+    return vulnsRequest.current;
+  }, []);
+
+  const intelRef = useRef<RansomwareIntel | null>(null);
+  intelRef.current = ransomwareIntel;
+  const intelRequest = useRef<Promise<void> | null>(null);
+  const ensureRansomwareIntel = useCallback(() => {
+    const current = intelRef.current;
+    if (current?.generatedAt && current.generatedAt === snapshotAtRef.current) return Promise.resolve();
+    if (!intelRequest.current) {
+      intelRequest.current = loadRansomwareIntel()
+        .then(async (data) => {
+          if (!data) return;
+          setRansomwareIntel(data);
+          await saveStoredValue('ransomwareIntel', data);
+        })
+        .finally(() => { intelRequest.current = null; });
+    }
+    return intelRequest.current;
+  }, []);
+
+  // Patch Tuesday, actor and trend data: like ensureVulns, but the stored copy is only the offline fallback
+  // (see createSnapshotLoader)
+  const msrcRef = useRef<MsrcData | null>(null);
+  msrcRef.current = msrc;
+  const actorsRef = useRef<ActorsData | null>(null);
+  actorsRef.current = actors;
+  const trendsRef = useRef<TrendsData | null>(null);
+  trendsRef.current = trends;
+  const statsRef = useRef<StatsData | null>(null);
+  statsRef.current = stats;
+  const snapshotAt = () => snapshotAtRef.current;
+  const [ensureMsrc] = useState(() => createSnapshotLoader<MsrcData>({
+    ref: msrcRef, snapshotAt, load: loadMsrc, setState: setMsrc,
+    read: () => getStoredValue<MsrcData>('msrc'), save: (data) => saveStoredValue('msrc', data),
+  }));
+  const [ensureActors] = useState(() => createSnapshotLoader<ActorsData>({
+    ref: actorsRef, snapshotAt, load: loadActors, setState: setActors,
+    read: () => getStoredValue<ActorsData>('actors'), save: (data) => saveStoredValue('actors', data),
+  }));
+  const [ensureTrends] = useState(() => createSnapshotLoader<TrendsData>({
+    ref: trendsRef, snapshotAt, load: loadTrends, setState: setTrends,
+    read: () => getStoredValue<TrendsData>('trends'), save: (data) => saveStoredValue('trends', data),
+  }));
+
+  const [ensureStats] = useState(() => createSnapshotLoader<StatsData>({
+    ref: statsRef, snapshotAt, load: loadStats, setState: setStats,
+    read: () => getStoredValue<StatsData>('stats'), save: (data) => saveStoredValue('stats', data),
+  }));
+
+  // The names text links to their panels (data/entities.json, about 80 KB): requested once the first paint is
+  // done, and again for each newer snapshot. Until then only CVE ids link
+  const entitiesRef = useRef<EntitiesData | null>(null);
+  entitiesRef.current = entities;
+  const [ensureEntities] = useState(() => createSnapshotLoader<EntitiesData>({
+    ref: entitiesRef, snapshotAt, load: loadEntities, setState: setEntities,
+    read: () => getStoredValue<EntitiesData>('entities'), save: (data) => saveStoredValue('entities', data),
+  }));
+  useEffect(() => {
+    const idle = window.requestIdleCallback;
+    if (idle) {
+      const id = idle(() => void ensureEntities(), { timeout: 3000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const id = setTimeout(() => void ensureEntities(), 1500);
+    return () => clearTimeout(id);
+  }, [ensureEntities, snapshotGeneratedAt]);
+  const entityMatcher = useMemo(() => buildEntityMatcher(entities), [entities]);
+
+  // Memoized so consumers only re-render when data actually changes (actions above are stable)
+  // Consumers see only the categories in use; the raw state stays whole so turning one back on restores it
+  const visibleArticles = useMemo(
+    () => withoutDisabledCategories(articles, feeds, settings.disabledCategories ?? []),
+    [articles, feeds, settings.disabledCategories],
+  );
+
+  const value = useMemo<FeedContextType>(() => ({
+    feeds,
+    cveIntel,
+    snapshotGeneratedAt,
+    incidents,
+    vulns,
+    ensureVulns,
+    dataSources,
+    ransomwareIntel,
+    ensureRansomwareIntel,
+    msrc,
+    ensureMsrc,
+    actors,
+    ensureActors,
+    trends,
+    ensureTrends,
+    stats,
+    ensureStats,
+    articles: visibleArticles,
+    feedHealth,
+    isRefreshing,
+    initialSyncDone,
+    refreshProgress,
+    lastUpdated,
+    isOffline,
+    activeArticle,
+    setActiveArticle,
+    refreshFeeds,
+    refreshFailedFeeds,
+    toggleFeedEnabled,
+    addCustomFeed,
+    addCustomFeeds,
+    updateFeed,
+    removeFeed,
+    resetFeedsToDefault,
+    toggleBookmark,
+    setBookmarkFolder,
+    setBookmarkNotes,
+    toggleRead,
+    markViewed,
+    markAllAsRead,
+    addCustomTagToArticle,
+  }), [
+    feeds, cveIntel, snapshotGeneratedAt, incidents, vulns, ensureVulns, dataSources, ransomwareIntel, ensureRansomwareIntel, msrc, ensureMsrc, actors, ensureActors, trends, ensureTrends, stats, ensureStats, visibleArticles, feedHealth, isRefreshing, initialSyncDone, refreshProgress, lastUpdated, isOffline, activeArticle,
+    refreshFeeds, refreshFailedFeeds, toggleFeedEnabled, addCustomFeed, addCustomFeeds, updateFeed, removeFeed,
+    resetFeedsToDefault, toggleBookmark, setBookmarkFolder, setBookmarkNotes, toggleRead, markViewed,
+    markAllAsRead, addCustomTagToArticle,
+  ]);
+
+  return (
+    <FeedContext.Provider value={value}>
+      <EntityMatcherContext.Provider value={entityMatcher}>
+        {children}
+      </EntityMatcherContext.Provider>
+    </FeedContext.Provider>
+  );
+};
+
+export function useFeeds(): FeedContextType {
+  const context = useContext(FeedContext);
+  if (!context) {
+    throw new Error('useFeeds must be used within a FeedProvider');
+  }
+  return context;
+}

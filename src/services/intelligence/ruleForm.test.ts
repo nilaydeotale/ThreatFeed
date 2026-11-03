@@ -1,0 +1,88 @@
+import { AlertRule } from '../../types';
+import { describe, expect, it } from 'vitest';
+import {
+  applyRuleEdit, conditionFromForm, conditionIssue, containsField, hasInvalidCondition, groupFromForm, groupToForm, hasEmptyGroup, newCondition, parseList,
+} from './ruleForm';
+
+describe('ruleForm', () => {
+  it('parseList trims and drops blanks', () => {
+    expect(parseList(' a, b ,, ,c ')).toEqual(['a', 'b', 'c']);
+  });
+
+  it('converts each value kind', () => {
+    expect(conditionFromForm('vulns', { key: 'x', field: 'vendor', text: 'Fortinet, ' })).toEqual({ field: 'vendor', values: ['Fortinet'] });
+    expect(conditionFromForm('vulns', { key: 'x', field: 'cvss', text: '15' })).toEqual({ field: 'cvss', min: 10 });
+    expect(conditionFromForm('vulns', { key: 'x', field: 'epss', text: '25' })).toEqual({ field: 'epss', min: 0.25 });
+    expect(conditionFromForm('vulns', { key: 'x', field: 'kevAddedWithinDays', text: '3' })).toEqual({ field: 'kevAddedWithinDays', days: 3 });
+    expect(conditionFromForm('vulns', { key: 'x', field: 'kev', text: '' })).toEqual({ field: 'kev' });
+    expect(conditionFromForm('news', { key: 'x', field: 'severity', text: 'critical' })).toEqual({ field: 'severity', min: 'critical' });
+  });
+
+  it('round-trips a nested group', () => {
+    const g = {
+      op: 'all' as const,
+      items: [
+        { field: 'vendor' as const, values: ['Fortinet'] },
+        { op: 'any' as const, items: [{ field: 'kev' as const }, { field: 'epss' as const, min: 0.5 }] },
+      ],
+    };
+    expect(groupFromForm('vulns', groupToForm(g))).toEqual(g);
+  });
+
+  it('detects empty groups at any depth', () => {
+    expect(hasEmptyGroup({ items: [] })).toBe(true);
+    expect(hasEmptyGroup({ items: [{ field: 'kev' }, { op: 'any', items: [] }] })).toBe(true);
+    expect(hasEmptyGroup({ items: [{ field: 'kev' }, { op: 'any', items: [{ field: 'kev' }] }] })).toBe(false);
+  });
+
+  it('containsField finds nested conditions with a predicate', () => {
+    const g = { items: [{ op: 'any', items: [{ field: 'cvss', min: 5 }] }] };
+    expect(containsField(g, 'cvss', c => (c.min as number) < 7)).toBe(true);
+    expect(containsField(g, 'cvss', c => (c.min as number) >= 7)).toBe(false);
+    expect(containsField(g, 'watched')).toBe(false);
+  });
+
+  it('newCondition seeds sensible defaults', () => {
+    expect(newCondition('vulns', 'cvss').text).toBe('7');
+  });
+
+  it('flags blank lists and non-numeric numbers', () => {
+    const c = (field: string, text: string) => ({ key: 'x', field, text });
+    expect(conditionIssue('vulns', c('vendor', ''))).not.toBeNull();
+    expect(conditionIssue('vulns', c('vendor', ' , '))).not.toBeNull();
+    expect(conditionIssue('vulns', c('vendor', 'Fortinet'))).toBeNull();
+    expect(conditionIssue('vulns', c('cvss', ''))).not.toBeNull();
+    expect(conditionIssue('vulns', c('epss', 'abc'))).not.toBeNull();
+    expect(conditionIssue('vulns', c('cvss', '7.5'))).toBeNull();
+    expect(conditionIssue('vulns', c('kev', ''))).toBeNull();
+    const g = { key: 'g', op: 'all' as const, items: [{ key: 'y', op: 'any' as const, items: [c('cve', '')] }] };
+    expect(hasInvalidCondition('vulns', g)).toBe(true);
+  });
+
+  const rule = (over: Partial<AlertRule>): AlertRule => ({
+    id: 'a', name: 'A', kind: 'vulns', enabled: true, notify: false, root: { op: 'all', items: [{ field: 'kev' }] },
+    createdAt: 't0', updatedAt: 't0', ...over,
+  });
+
+  it('applyRuleEdit keeps live toggles and merges only edited fields', () => {
+    const live = rule({ enabled: false });
+    const edited = rule({ name: 'B', notify: true, updatedAt: 't1', enabled: true });
+    const out = applyRuleEdit([live], edited, false)!;
+    expect(out[0]).toMatchObject({ name: 'B', notify: true, updatedAt: 't1', enabled: false });
+  });
+
+  it('applyRuleEdit drops a save for a deleted rule but appends a new one', () => {
+    expect(applyRuleEdit([], rule({}), false)).toBeNull();
+    expect(applyRuleEdit([], rule({}), true)).toHaveLength(1);
+  });
+
+  it('applyRuleEdit stamps updatedAt only when the name or conditions changed', () => {
+    const live = rule({});
+    const notifyOnly = applyRuleEdit([live], rule({ notify: true, updatedAt: 't1' }), false)!;
+    expect(notifyOnly[0]).toMatchObject({ notify: true, updatedAt: 't0' });
+    expect(applyRuleEdit([live], rule({ name: 'B', updatedAt: 't1' }), false)![0].updatedAt).toBe('t1');
+    const root = { op: 'all' as const, items: [{ field: 'cvss' as const, min: 8 }] };
+    expect(applyRuleEdit([live], rule({ root, updatedAt: 't1' }), false)![0].updatedAt).toBe('t1');
+    expect(applyRuleEdit([], rule({ updatedAt: 't1' }), true)![0].updatedAt).toBe('t1');
+  });
+});
