@@ -169,7 +169,7 @@ Every article is enriched in the browser while its feed is parsed, and the resul
 - **Automatic reload**: a TV or dashboard screen checks every 30 minutes for a new version of the site and reloads at a quiet moment, right after a tile swap. It also reloads once a night at 03:00. It never reloads more than once per 10 minutes, and an offline screen does not reload. The link and its settings are kept across reloads. If a cache (a CDN or the browser) still serves the old page right after a deploy, the reload can land on the old version; the screen then stays on it until the nightly reload.
 - **Breaking news**: a story that arrives while the screen is running, is less than an hour old, and is critical or mentions a CVE added to CISA KEV in the last 24 hours takes the next tile that changes, as a big tile with a red **NEW** badge for one round. Ransomware victims are never breaking. Nothing counts as breaking until the screen's own startup load has finished.
 - **Mixed mode**: the Latest news wall with the Vulns numbers (Critical CVEs 7 d, Added to KEV 7 d, Public exploits 7 d, Patch Tuesday) mixed in, about one tile in four. Start it with the **TV+** button on Latest, or open `#/latest?tv=1&mix=1`.
-- **Kiosk URLs** (prefix with `https://jozeta.github.io/ThreatFeed/`):
+- **Kiosk URLs** (prefix with `https://nilaydeotale.github.io/ThreatFeed/`):
   - `#/latest?tv=1`, `#/briefing?tv=1`, `#/ransomware?tv=1`: TV mode
   - `#/vulns?dash=1`, `#/ransomware?dash=1`: dashboard mode
 
@@ -180,7 +180,7 @@ Every article is enriched in the browser while its feed is parsed, and the resul
   - **Transition**: **Fade**, **Slide** or **Reveal** (default Reveal, which pops tiles in one by one). Reduce motion gives a quick plain fade.
   - **Animation speed**: **Slow**, **Medium** or **Fast** (default, the original speed). Slows down tile transitions and the dashboards' count-ups, growing bars, drawn lines and list rows alike (Medium 1.5×, Slow 2.25× as long). The time each tile stays up is still the interval, and Reduce motion overrides the speed.
   - **QR codes on tiles** (off by default): a QR code in the corner of wide and big news tiles that opens the story.
-- **Per-screen link settings**: a TV or dashboard link can set `size=large|medium|small|xsmall`, `speed=slow|medium|fast`, `transition=fade|slide|reveal`, `interval=<seconds>` (snapped to 30 s steps), `qr=1|0`, and `mix=1` (Latest only). They apply to that screen only and never change saved settings. Example kiosk link: `https://jozeta.github.io/ThreatFeed/#/latest?tv=1&mix=1&size=small&speed=slow&qr=1`
+- **Per-screen link settings**: a TV or dashboard link can set `size=large|medium|small|xsmall`, `speed=slow|medium|fast`, `transition=fade|slide|reveal`, `interval=<seconds>` (snapped to 30 s steps), `qr=1|0`, and `mix=1` (Latest only). They apply to that screen only and never change saved settings. Example kiosk link: `https://nilaydeotale.github.io/ThreatFeed/#/latest?tv=1&mix=1&size=small&speed=slow&qr=1`
 - **Trend history**: dashboard trends are built from `stats.json` (see [Feed Snapshot](#-feed-snapshot--cve-intelligence)), so they fill in over the coming weeks. "vs last week" figures stay hidden until there is history to compare against.
 
 ---
@@ -199,63 +199,4 @@ Every article is enriched in the browser while its feed is parsed, and the resul
 
 ---
 
-## 🚀 Running Locally
-
-```bash
-# Install dependencies
-npm install
-
-# Start development server
-npm run dev
-
-# Build production static website (dist/)
-npm run build
-
-# Preview static build
-npm run preview
-
-# Run the test suite
-npm test
-
-# Build public/data/snapshot.json locally (all default feeds + KEV/EPSS data)
-npm run snapshot
-
-# Regenerate public/data/world-map.json (country outlines for the ransomware world-map panel)
-npm run world-map
-```
-
-Without a local snapshot, the dev server falls back to fetching feeds live through the configured CORS gateway.
-
----
-
-## 📦 Feed Snapshot & CVE Intelligence
-
-`.github/workflows/deploy.yml` runs every 30 minutes (and on every push to `main`): it runs the tests, then `npm run snapshot`, then builds and deploys. The snapshot script (`scripts/build-snapshot.ts`) fetches every enabled default feed server-side (where CORS doesn't apply), parses them with the app's own parser, and adds CISA KEV and FIRST EPSS data for every CVE mentioned, the full KEV catalog, the last 14 days of CVEs from NVD and reviewed GitHub advisories, the top EPSS scores, plus ransomware leak-site victims (Ransomware.live) and recent breaches (Have I Been Pwned). The results ship with the site:
-
-- `data/snapshot.json` (about 1.9 MB compressed): articles, feed health, CVE intel for the articles, incidents, and the status of every external source (shown in Feed Health → "Data sources in the last snapshot").
-- `data/vulns.json` (about 160 KB compressed): KEV catalog with CVSS and EPSS, NVD statistics and critical CVEs, a compact `watchable` list of CVSS 7–8.9 CVEs from the last 14 days, GitHub advisories, top EPSS. Loaded only by the views that use it, or when an enabled Vulns alert rule (or a watched CVE) needs it.
-- `data/ransomware.json` (about 30 KB compressed): per-group profiles (techniques, tools, ATT&CK, linked CVEs, payments), publicly reported attacks and Ransomwhere payment totals. Loaded only by the Ransomware page. Ransomware.live allows one request a minute, so each run makes at most four (the latest victims and reports every run, the group list with every group's profile daily, this month's victims every six hours) and carries the rest over; MITRE ATT&CK, Malpedia and Ransomwhere are refreshed daily. Exploit data (Metasploit's module list, Nuclei's template index, PoC-in-GitHub) is fetched every run and reduced to the CVEs the app shows; CWE names come from `scripts/data/cwe-names.json` (MITRE CWE 5.0).
-- `data/nvd-cache.json`: every CVE in the 14-day NVD window plus KEV CVSS scores, read back by the next run (`PREVIOUS_NVD_CACHE_URL`) so it only asks NVD for CVEs modified since, usually one small request instead of about 40 MB. Older than two days or missing, the script downloads the window again.
-- `data/msrc.json`, `data/actors.json`: Patch Tuesday releases and actor/malware profiles (used by the actor and malware panels). Each run reads its previous copy (`PREVIOUS_MSRC_URL`, `PREVIOUS_ACTORS_URL`) and carries over what it can't refetch.
-- `data/entities.json`: the names (vendors, ransomware groups, actors, malware, aliases) the app turns into entity links.
-- `data/trends.json`: daily counts kept for 730 days; the mentions-over-time charts in the panels read it. The run recounts the last three days on top of the previous copy (`PREVIOUS_TRENDS_URL`, or `PREVIOUS_TRENDS_FILE` from an `actions/cache` copy). A deploy replaces the whole site, so a "Keep the trends history" step restores the published or cached copy if the snapshot didn't write one; the history is never lost.
-- `data/stats.json`: daily counts for the last 400 days (critical and high CVEs, KEV additions, public exploits, leak-site victims, and per group, country and sector), de-duplicated by CVE and victim ID. Like `trends.json`, it is read back on the next run and kept across deploys, and it feeds the TV and dashboard modes.
-
-**Optional NVD API key**: NVD allows 5 requests per 30 seconds without a key and 50 with one. Request a free key at <https://nvd.nist.gov/developers/request-an-api-key>, then add it as a repository secret named `NVD_API_KEY` (Settings → Secrets and variables → Actions). The workflow passes it to the script; without it everything still works, just slower on full downloads.
-
-In the browser (Settings → Data Source, on by default), the app loads the snapshot on startup and on each refresh, and only fetches live the feeds it doesn't cover: the ones you added yourself, plus any default feed the snapshot failed to fetch (some sites block GitHub's servers but still answer the proxy). With 120 default feeds this replaces a multi-minute proxied refresh with a few seconds, and avoids the public proxies' blocking and rate limits entirely. A failed snapshot step doesn't block a deploy; the app then falls back to live fetching.
-
-`.github/workflows/ci.yml` runs the tests and a build for pull requests and other branches.
-
----
-
-## 🌐 Static Deployment
-
-ThreatFeed produces completely static HTML, CSS, and JavaScript files in `dist/`.
-
-### Deploy to Cloudflare Pages / Netlify / Vercel
-- Build command: `npm run build`
-- Output directory: `dist`
-
-### Deploy to GitHub Pages
-Simply publish the contents of the `dist/` directory to your `gh-pages` branch.
+##
