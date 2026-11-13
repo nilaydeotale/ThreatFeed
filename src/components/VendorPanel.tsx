@@ -4,7 +4,13 @@ import { useFeeds } from '../context/FeedContext';
 import { useSettings } from '../context/SettingsContext';
 import { useMsrc, useTrends, useVulns } from '../hooks/useVulns';
 import { closePanel, goToPage, openPanel } from '../hooks/useHashRoute';
-import { canonicalVendor, fetchWikiSummary, vendorSummary, VendorSummary, WikiSummary } from '../services/intelligence/vendor';
+import {
+  canonicalVendor,
+  fetchWikiSummary,
+  vendorSummary,
+  VendorSummary,
+  WikiSummary,
+} from '../services/intelligence/vendor';
 import { severityFromScore } from '../services/intelligence/vulns';
 import { weeklySeries } from '../services/intelligence/trends';
 import { formatRelativeTime } from '../utils/date';
@@ -33,16 +39,38 @@ const BandChart: React.FC<{ bands: VendorSummary['cvssBands'] }> = ({ bands }) =
   const barSpace = width - labelWidth - 40;
   if (!rows.length) return <p className="text-xs font-serif italic text-theme-text-muted">No KEV entries to score.</p>;
   return (
-    <svg viewBox={`0 0 ${width} ${rows.length * rowHeight}`} className="w-full max-w-lg" role="img" aria-label="Known exploited vulnerabilities by CVSS score">
+    <svg
+      viewBox={`0 0 ${width} ${rows.length * rowHeight}`}
+      className="w-full max-w-lg"
+      role="img"
+      aria-label="Known exploited vulnerabilities by CVSS score"
+    >
       {rows.map((b, i) => {
         const y = i * rowHeight;
         const w = Math.max(2, (b.count / max) * barSpace);
         return (
           <g key={b.id}>
             <title>{`${b.label}: ${b.count}`}</title>
-            <text x={labelWidth - 6} y={y + rowHeight / 2} textAnchor="end" dominantBaseline="central" className="fill-theme-text font-mono" fontSize={11}>{b.label}</text>
+            <text
+              x={labelWidth - 6}
+              y={y + rowHeight / 2}
+              textAnchor="end"
+              dominantBaseline="central"
+              className="fill-theme-text font-mono"
+              fontSize={11}
+            >
+              {b.label}
+            </text>
             <rect x={labelWidth} y={y + 4} width={w} height={rowHeight - 8} rx={2} className={SEVERITY_FILL[b.id]} />
-            <text x={labelWidth + w + 4} y={y + rowHeight / 2} dominantBaseline="central" className="fill-theme-text-muted font-mono" fontSize={11}>{b.count}</text>
+            <text
+              x={labelWidth + w + 4}
+              y={y + rowHeight / 2}
+              dominantBaseline="central"
+              className="fill-theme-text-muted font-mono"
+              fontSize={11}
+            >
+              {b.count}
+            </text>
           </g>
         );
       })}
@@ -54,8 +82,15 @@ const ArticleList: React.FC<{ articles: Article[]; onOpen: (a: Article) => void 
   <ul>
     {articles.map((a) => (
       <li key={a.id} className="lift -mx-2 px-2 py-1 rounded">
-        <button onClick={() => onOpen(a)} className="text-left font-serif text-sm font-bold text-theme-text hover:text-theme-accent">{a.title}</button>
-        <p className="text-[11px] font-mono text-theme-text-muted">{a.sourceName} · {formatRelativeTime(a.publishedAt)}</p>
+        <button
+          onClick={() => onOpen(a)}
+          className="text-left font-serif text-sm font-bold text-theme-text hover:text-theme-accent"
+        >
+          {a.title}
+        </button>
+        <p className="text-[11px] font-mono text-theme-text-muted">
+          {a.sourceName} · {formatRelativeTime(a.publishedAt)}
+        </p>
       </li>
     ))}
   </ul>
@@ -67,17 +102,38 @@ const WikiIntro: React.FC<{ vendor: string }> = ({ vendor }) => {
   useEffect(() => {
     let cancelled = false;
     setWiki(null);
-    fetchWikiSummary(vendor).then((w) => { if (!cancelled) setWiki(w); });
-    return () => { cancelled = true; };
+    fetchWikiSummary(vendor).then((w) => {
+      if (!cancelled) setWiki(w);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [vendor]);
   if (!wiki) return null;
   return (
     <div className="flex gap-4">
-      {wiki.thumbnail && <img src={wiki.thumbnail} alt="" loading="lazy" referrerPolicy="no-referrer" className="w-16 h-16 object-contain rounded bg-white/80 p-1 shrink-0" />}
+      {wiki.thumbnail && (
+        <img
+          src={wiki.thumbnail}
+          alt=""
+          loading="lazy"
+          referrerPolicy="no-referrer"
+          className="w-16 h-16 object-contain rounded bg-white/80 p-1 shrink-0"
+        />
+      )}
       <div className="min-w-0">
-        {wiki.description && <p className="text-[11px] font-mono uppercase tracking-wider text-theme-text-muted">{wiki.description}</p>}
-        <p className="text-sm font-serif text-theme-text leading-relaxed line-clamp-6"><EntityText text={wiki.extract} self={{ kind: 'vendor', id: vendor }} /></p>
-        <a href={wiki.url} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-xs font-mono text-theme-accent hover:underline">
+        {wiki.description && (
+          <p className="text-[11px] font-mono uppercase tracking-wider text-theme-text-muted">{wiki.description}</p>
+        )}
+        <p className="text-sm font-serif text-theme-text leading-relaxed line-clamp-6">
+          <EntityText text={wiki.extract} self={{ kind: 'vendor', id: vendor }} />
+        </p>
+        <a
+          href={wiki.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-1 inline-flex items-center gap-1 text-xs font-mono text-theme-accent hover:underline"
+        >
           Wikipedia <ExternalLink className="w-3 h-3" />
         </a>
       </div>
@@ -100,19 +156,43 @@ interface VendorPanelProps {
 }
 
 /** One vendor at a glance: what Wikipedia says, its KEV history, new CVEs, news and advisories. */
-export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions = [], inStack, hidden, onToggleStack, onToggleHidden, onOpenCve, onOpenProduct, onOpenArticle, onClose, loading }) => {
+export const VendorPanel: React.FC<VendorPanelProps> = ({
+  summary: s,
+  mentions = [],
+  inStack,
+  hidden,
+  onToggleStack,
+  onToggleHidden,
+  onOpenCve,
+  onOpenProduct,
+  onOpenArticle,
+  onClose,
+  loading,
+}) => {
   return (
     <SidePanel onClose={onClose} title={s.name}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-theme-text-muted flex items-center gap-1"><Building2 className="w-3 h-3" /> Vendor</p>
+          <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-theme-text-muted flex items-center gap-1">
+            <Building2 className="w-3 h-3" /> Vendor
+          </p>
           <h2 className="font-serif text-2xl font-extrabold text-theme-text break-words">{s.name}</h2>
           <div className="flex flex-wrap gap-1.5 mt-2">
-            <button onClick={onToggleStack} aria-pressed={inStack} className={toggleClass(inStack)} title="My stack: boosts matching news and powers the stack filters and alerts">
+            <button
+              onClick={onToggleStack}
+              aria-pressed={inStack}
+              className={toggleClass(inStack)}
+              title="My stack: boosts matching news and powers the stack filters and alerts"
+            >
               <Layers className="w-3.5 h-3.5" /> {inStack ? 'In my stack' : 'Add to my stack'}
             </button>
             {onToggleHidden && (
-              <button onClick={onToggleHidden} aria-pressed={hidden} className={toggleClass(hidden)} title="Leave this vendor out of the KEV views on the Vulnerabilities page">
+              <button
+                onClick={onToggleHidden}
+                aria-pressed={hidden}
+                className={toggleClass(hidden)}
+                title="Leave this vendor out of the KEV views on the Vulnerabilities page"
+              >
                 <EyeOff className="w-3.5 h-3.5" /> {hidden ? 'Hidden on Vulns page' : 'Hide on Vulns page'}
               </button>
             )}
@@ -123,16 +203,33 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
 
       <WikiIntro vendor={s.name} />
 
-      {loading ? <p className="text-xs font-mono text-theme-text-muted animate-pulse">Loading vulnerability data…</p> : (
+      {loading ? (
+        <p className="text-xs font-mono text-theme-text-muted animate-pulse">Loading vulnerability data…</p>
+      ) : (
         <>
-          <StatCards columns="sm:grid-cols-3" stats={[
-            { label: 'In KEV', value: s.kevTotal, note: s.kevTotal ? 'known exploited (CISA)' : 'none known exploited' },
-            { label: 'Added, 30 days', value: s.kevLast30, note: `${s.kevLast90} in 90 days` },
-            { label: 'Ransomware', value: s.ransomwareLinked, note: s.kevTotal ? `${Math.round((s.ransomwareLinked / s.kevTotal) * 100)}% of KEV` : '' },
-            { label: 'CVSS', value: s.avgCvss?.toFixed(1) ?? '—', note: s.maxCvss !== undefined ? `average · max ${s.maxCvss.toFixed(1)}` : 'no scores' },
-            { label: 'New CVEs', value: s.newCves.length, note: 'CVSS ≥ 7, last 14 days' },
-            { label: 'Public exploits', value: s.exploitsPublic, note: 'Metasploit, Nuclei, PoCs' },
-          ]} />
+          <StatCards
+            columns="sm:grid-cols-3"
+            stats={[
+              {
+                label: 'In KEV',
+                value: s.kevTotal,
+                note: s.kevTotal ? 'known exploited (CISA)' : 'none known exploited',
+              },
+              { label: 'Added, 30 days', value: s.kevLast30, note: `${s.kevLast90} in 90 days` },
+              {
+                label: 'Ransomware',
+                value: s.ransomwareLinked,
+                note: s.kevTotal ? `${Math.round((s.ransomwareLinked / s.kevTotal) * 100)}% of KEV` : '',
+              },
+              {
+                label: 'CVSS',
+                value: s.avgCvss?.toFixed(1) ?? '—',
+                note: s.maxCvss !== undefined ? `average · max ${s.maxCvss.toFixed(1)}` : 'no scores',
+              },
+              { label: 'New CVEs', value: s.newCves.length, note: 'CVSS ≥ 7, last 14 days' },
+              { label: 'Public exploits', value: s.exploitsPublic, note: 'Metasploit, Nuclei, PoCs' },
+            ]}
+          />
 
           <div>
             <SectionTitle>Severity over time (24 months)</SectionTitle>
@@ -142,13 +239,25 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
           {s.patchTuesday && (
             <div>
               <SectionTitle>Patch Tuesday · {s.patchTuesday.title}</SectionTitle>
-              <StatCards columns="sm:grid-cols-4" stats={[
-                { label: 'CVEs', value: s.patchTuesday.total, note: `released ${s.patchTuesday.released}` },
-                { label: 'Critical', value: s.patchTuesday.critical },
-                { label: 'Zero-days', value: s.patchTuesday.exploited, note: `${s.patchTuesday.disclosed} publicly disclosed` },
-                { label: 'RCE', value: s.patchTuesday.rce, note: 'remote code execution' },
-              ]} />
-              <button onClick={() => goToPage('vulnerabilities', 'patch')} className="mt-2 text-xs font-mono text-theme-accent hover:underline">Open the Patch Tuesday tab →</button>
+              <StatCards
+                columns="sm:grid-cols-4"
+                stats={[
+                  { label: 'CVEs', value: s.patchTuesday.total, note: `released ${s.patchTuesday.released}` },
+                  { label: 'Critical', value: s.patchTuesday.critical },
+                  {
+                    label: 'Zero-days',
+                    value: s.patchTuesday.exploited,
+                    note: `${s.patchTuesday.disclosed} publicly disclosed`,
+                  },
+                  { label: 'RCE', value: s.patchTuesday.rce, note: 'remote code execution' },
+                ]}
+              />
+              <button
+                onClick={() => goToPage('vulnerabilities', 'patch')}
+                className="mt-2 text-xs font-mono text-theme-accent hover:underline"
+              >
+                Open the Patch Tuesday tab →
+              </button>
             </div>
           )}
 
@@ -184,7 +293,8 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
                       className="press px-2 py-1 rounded border border-theme-border bg-theme-surface text-xs font-mono text-theme-text hover:border-theme-accent hover:text-theme-accent"
                     >
                       {/* Products matched through NVD under another catalog vendor (e.g. Android's kernel for Linux) say whose */}
-                      {p.vendor.toLowerCase() === s.name.toLowerCase() ? p.product : `${p.vendor} ${p.product}`} <span className="text-theme-text-muted">{p.count}</span>
+                      {p.vendor.toLowerCase() === s.name.toLowerCase() ? p.product : `${p.vendor} ${p.product}`}{' '}
+                      <span className="text-theme-text-muted">{p.count}</span>
                     </button>
                   ))}
                 </div>
@@ -196,8 +306,13 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
                     <li key={k.cve} className="py-2 space-y-0.5">
                       <div className="flex flex-wrap items-center gap-2 font-mono">
                         <CveButton cve={k.cve} onOpen={onOpenCve} />
-                        <SeverityPill severity={k.cvss === undefined ? undefined : severityFromScore(k.cvss)} score={k.cvss} />
-                        <span className="text-theme-text-muted">EPSS <EpssValue epss={k.epss} /></span>
+                        <SeverityPill
+                          severity={k.cvss === undefined ? undefined : severityFromScore(k.cvss)}
+                          score={k.cvss}
+                        />
+                        <span className="text-theme-text-muted">
+                          EPSS <EpssValue epss={k.epss} />
+                        </span>
                         {k.ransomware && <Skull className="w-3 h-3 text-rose-500" aria-label="Used by ransomware" />}
                         <span className="ml-auto text-theme-text-muted">{k.dateAdded}</span>
                       </div>
@@ -220,12 +335,26 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
                       <SeverityPill severity={c.severity} score={c.score} />
                       <span className="ml-auto text-theme-text-muted">{c.published.slice(0, 10)}</span>
                     </div>
-                    {c.description ? <p className="font-serif text-theme-text line-clamp-2"><EntityText text={c.description} self={{ kind: 'vendor', id: s.name }} /></p> : c.products && <p className="font-mono text-theme-text-muted">{c.products.join(', ')}</p>}
+                    {c.description ? (
+                      <p className="font-serif text-theme-text line-clamp-2">
+                        <EntityText text={c.description} self={{ kind: 'vendor', id: s.name }} />
+                      </p>
+                    ) : (
+                      c.products && <p className="font-mono text-theme-text-muted">{c.products.join(', ')}</p>
+                    )}
                   </li>
                 ))}
               </ul>
-            ) : <p className="text-xs font-serif italic text-theme-text-muted">No critical or high CVEs for {s.name} in the last two weeks.</p>}
-            {s.newCves.length > NEW_CVES_SHOWN && <p className="mt-1 text-[11px] font-mono text-theme-text-muted">…and {s.newCves.length - NEW_CVES_SHOWN} more</p>}
+            ) : (
+              <p className="text-xs font-serif italic text-theme-text-muted">
+                No critical or high CVEs for {s.name} in the last two weeks.
+              </p>
+            )}
+            {s.newCves.length > NEW_CVES_SHOWN && (
+              <p className="mt-1 text-[11px] font-mono text-theme-text-muted">
+                …and {s.newCves.length - NEW_CVES_SHOWN} more
+              </p>
+            )}
           </div>
         </>
       )}
@@ -234,9 +363,11 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
 
       <div>
         <SectionTitle>Latest news ({s.newsMentions.length})</SectionTitle>
-        {s.newsMentions.length
-          ? <ArticleList articles={s.newsMentions.slice(0, NEWS_SHOWN)} onOpen={onOpenArticle} />
-          : <p className="text-xs font-serif italic text-theme-text-muted">No articles in your feeds mention {s.name}.</p>}
+        {s.newsMentions.length ? (
+          <ArticleList articles={s.newsMentions.slice(0, NEWS_SHOWN)} onOpen={onOpenArticle} />
+        ) : (
+          <p className="text-xs font-serif italic text-theme-text-muted">No articles in your feeds mention {s.name}.</p>
+        )}
       </div>
 
       {s.advisoryFeedArticles.length > 0 && (
@@ -247,14 +378,17 @@ export const VendorPanel: React.FC<VendorPanelProps> = ({ summary: s, mentions =
       )}
 
       <p className="text-[10px] font-mono text-theme-text-muted">
-        KEV entries match the catalog's vendor name or NVD's affected products; news matches the name as a whole word.
+        KEV entries match the catalog&apos;s vendor name or NVD&apos;s affected products; news matches the name as a
+        whole word.
       </p>
     </SidePanel>
   );
 };
 
 /** Patch Tuesday data loads only for Microsoft */
-const WithMsrc: React.FC<{ children: (msrc: MsrcData | null) => React.ReactNode }> = ({ children }) => <>{children(useMsrc())}</>;
+const WithMsrc: React.FC<{ children: (msrc: MsrcData | null) => React.ReactNode }> = ({ children }) => (
+  <>{children(useMsrc())}</>
+);
 
 interface HostProps {
   vendor: string;
@@ -264,18 +398,28 @@ interface HostProps {
 /** Mounted once by the app for ?vendor=…; closing removes the parameter, and a CVE opened from it is the app's CVE host's */
 const VendorPanelHost: React.FC<HostProps> = (props) => {
   const vulns = useVulns();
-  return canonicalVendor(props.vendor) === 'Microsoft'
-    ? <WithMsrc>{(msrc) => <VendorView {...props} vulns={vulns} msrc={msrc} />}</WithMsrc>
-    : <VendorView {...props} vulns={vulns} />;
+  return canonicalVendor(props.vendor) === 'Microsoft' ? (
+    <WithMsrc>{(msrc) => <VendorView {...props} vulns={vulns} msrc={msrc} />}</WithMsrc>
+  ) : (
+    <VendorView {...props} vulns={vulns} />
+  );
 };
 
-const VendorView: React.FC<HostProps & { vulns: VulnData | null; msrc?: MsrcData | null }> = ({ vendor, vulns, msrc, onOpenArticle }) => {
+const VendorView: React.FC<HostProps & { vulns: VulnData | null; msrc?: MsrcData | null }> = ({
+  vendor,
+  vulns,
+  msrc,
+  onOpenArticle,
+}) => {
   const { articles } = useFeeds();
   const { settings, updateSettings } = useSettings();
   const summary = useMemo(() => vendorSummary(vendor, vulns, articles, msrc), [vendor, vulns, articles, msrc]);
   const trends = useTrends();
   // The history counts vendors under the KEV catalog's spelling
-  const mentions = useMemo(() => weeklySeries(trends, [`vendor:${summary.name}`, `vendor:${summary.kevVendor ?? summary.name}`]), [trends, summary.name, summary.kevVendor]);
+  const mentions = useMemo(
+    () => weeklySeries(trends, [`vendor:${summary.name}`, `vendor:${summary.kevVendor ?? summary.name}`]),
+    [trends, summary.name, summary.kevVendor],
+  );
 
   const close = () => closePanel('vendor');
 
@@ -291,12 +435,27 @@ const VendorView: React.FC<HostProps & { vulns: VulnData | null; msrc?: MsrcData
       loading={!vulns}
       inStack={inStack}
       hidden={hidden}
-      onToggleStack={() => updateSettings({ stackKeywords: inStack ? stack.filter((k) => k.toLowerCase() !== summary.name.toLowerCase()) : [...stack, summary.name] })}
-      onToggleHidden={hiddenName ? () => updateSettings({
-        hiddenVulnVendors: hidden ? settings.hiddenVulnVendors.filter((v) => v !== hiddenName) : [...settings.hiddenVulnVendors, hiddenName],
-      }) : undefined}
+      onToggleStack={() =>
+        updateSettings({
+          stackKeywords: inStack
+            ? stack.filter((k) => k.toLowerCase() !== summary.name.toLowerCase())
+            : [...stack, summary.name],
+        })
+      }
+      onToggleHidden={
+        hiddenName
+          ? () =>
+              updateSettings({
+                hiddenVulnVendors: hidden
+                  ? settings.hiddenVulnVendors.filter((v) => v !== hiddenName)
+                  : [...settings.hiddenVulnVendors, hiddenName],
+              })
+          : undefined
+      }
       onOpenCve={(id) => openPanel('cve', id)}
-      onOpenProduct={(v, p) => goToPage('vulnerabilities', 'kev', new URLSearchParams({ kevVendor: v, product: `${v} ${p}`, days: '0' }))}
+      onOpenProduct={(v, p) =>
+        goToPage('vulnerabilities', 'kev', new URLSearchParams({ kevVendor: v, product: `${v} ${p}`, days: '0' }))
+      }
       onOpenArticle={onOpenArticle}
       onClose={close}
     />

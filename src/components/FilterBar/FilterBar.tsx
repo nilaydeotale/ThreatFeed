@@ -42,9 +42,15 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
             <div className="flex flex-wrap items-center gap-1.5 mb-3 pr-8 text-xs font-mono">
               <span className="uppercase tracking-wider text-theme-text-muted mr-1">Saved searches:</span>
               {settings.savedSearches.map((q) => (
-                <span key={q} className="inline-flex items-center rounded border border-theme-border bg-theme-surface overflow-hidden">
+                <span
+                  key={q}
+                  className="inline-flex items-center rounded border border-theme-border bg-theme-surface overflow-hidden"
+                >
                   <button
-                    onClick={() => { updateFilter('searchQuery', q); updateFilter('sortBy', 'relevance'); }}
+                    onClick={() => {
+                      updateFilter('searchQuery', q);
+                      updateFilter('sortBy', 'relevance');
+                    }}
                     className={`px-2 py-0.5 hover:text-theme-accent ${filters.searchQuery === q ? 'text-theme-accent font-bold' : 'text-theme-text'}`}
                   >
                     {q}
@@ -177,7 +183,9 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
                 className="w-full bg-theme-surface border border-theme-border rounded px-3 py-2 text-xs font-mono text-theme-text focus:outline-none focus:border-theme-accent"
               >
                 <option value="newest">Newest First (Publication Time)</option>
-                <option value="relevance" disabled={!filters.searchQuery.trim()}>Search Relevance (when searching)</option>
+                <option value="relevance" disabled={!filters.searchQuery.trim()}>
+                  Search Relevance (when searching)
+                </option>
                 <option value="severity">Threat Severity (Highest First)</option>
                 <option value="oldest">Oldest First</option>
                 <option value="recently_read">Recently Read</option>
@@ -216,15 +224,16 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
       {/* Active Filter Chips Bar */}
       {hasActiveFilters && (
         <div className="main-content-container mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center gap-2 text-xs font-mono bg-theme-accent-subtle/30 border-t border-theme-border">
-          <span className="text-theme-accent font-bold uppercase tracking-wider">
-            Active Filters:
-          </span>
+          <span className="text-theme-accent font-bold uppercase tracking-wider">Active Filters:</span>
 
           {filters.watchlistOnly && (
             <span className="inline-flex items-center gap-1 bg-amber-500/20 text-amber-600 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-500/40 font-bold">
               <Target className="w-3 h-3 text-amber-500" />
               Watchlist Matches Only
-              <X className="w-3 h-3 cursor-pointer hover:text-rose-500 ml-1" onClick={() => updateFilter('watchlistOnly', false)} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-rose-500 ml-1"
+                onClick={() => updateFilter('watchlistOnly', false)}
+              />
             </span>
           )}
 
@@ -232,63 +241,84 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
             <span className="inline-flex items-center gap-1 bg-rose-500/15 text-rose-500 px-2 py-0.5 rounded border border-rose-500/30 font-bold">
               <ShieldAlert className="w-3 h-3" />
               Min Severity: {filters.severityFilter.toUpperCase()}
-              <X className="w-3 h-3 cursor-pointer hover:text-rose-600 ml-1" onClick={() => updateFilter('severityFilter', 'all')} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-rose-600 ml-1"
+                onClick={() => updateFilter('severityFilter', 'all')}
+              />
             </span>
           )}
 
           {filters.searchQuery && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
-              Query: "{filters.searchQuery}"
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('searchQuery', '')} />
+              Query: &quot;{filters.searchQuery}&quot;
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('searchQuery', '')}
+              />
             </span>
           )}
 
           {filters.selectedCategory && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
               Category: {filters.selectedCategory}
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('selectedCategory', null)} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('selectedCategory', null)}
+              />
             </span>
           )}
 
           {filters.selectedSourceId && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
-              Source: {feeds.find(f => f.id === filters.selectedSourceId)?.name || filters.selectedSourceId}
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('selectedSourceId', null)} />
+              Source: {feeds.find((f) => f.id === filters.selectedSourceId)?.name || filters.selectedSourceId}
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('selectedSourceId', null)}
+              />
             </span>
           )}
 
           {filters.selectedTag && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
               Tag: #{filters.selectedTag}
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('selectedTag', null)} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('selectedTag', null)}
+              />
             </span>
           )}
 
           {filters.readStatus !== 'all' && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
               Status: {filters.readStatus}
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('readStatus', 'all')} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('readStatus', 'all')}
+              />
             </span>
           )}
 
           {filters.dateRange !== 'all' && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
               Date: {filters.dateRange}
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('dateRange', 'all')} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('dateRange', 'all')}
+              />
             </span>
           )}
 
           {filters.sortBy === 'severity' && (
             <span className="inline-flex items-center gap-1 bg-theme-surface px-2 py-0.5 rounded border border-theme-border text-theme-text">
               Sorted by: Severity Score
-              <X className="w-3 h-3 cursor-pointer hover:text-theme-accent" onClick={() => updateFilter('sortBy', 'newest')} />
+              <X
+                className="w-3 h-3 cursor-pointer hover:text-theme-accent"
+                onClick={() => updateFilter('sortBy', 'newest')}
+              />
             </span>
           )}
 
-          <button
-            onClick={resetFilters}
-            className="text-theme-accent hover:underline font-bold ml-auto"
-          >
+          <button onClick={resetFilters} className="text-theme-accent hover:underline font-bold ml-auto">
             Clear All
           </button>
         </div>

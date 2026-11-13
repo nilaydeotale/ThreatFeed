@@ -8,10 +8,7 @@ interface UseKeyboardNavigationProps {
   isModalOpen: boolean;
 }
 
-export function useKeyboardNavigation({
-  onOpenShortcuts,
-  isModalOpen,
-}: UseKeyboardNavigationProps) {
+export function useKeyboardNavigation({ onOpenShortcuts, isModalOpen }: UseKeyboardNavigationProps) {
   const { refreshFeeds, isRefreshing } = useFeeds();
 
   useEffect(() => {
@@ -46,7 +43,7 @@ export function useKeyboardNavigation({
           }
           break;
         case 'f':
-        case '/':
+        case '/': {
           e.preventDefault();
           const searchInput = document.getElementById('global-search-input') as HTMLInputElement | null;
           if (searchInput) {
@@ -54,6 +51,7 @@ export function useKeyboardNavigation({
             searchInput.select();
           }
           break;
+        }
         case '?':
           e.preventDefault();
           onOpenShortcuts();

@@ -7,7 +7,7 @@ import { extractCVEs, calculateThreatSeverity } from '../intelligence/iocExtract
 function simpleHash(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) + hash) + str.charCodeAt(i);
+    hash = (hash << 5) + hash + str.charCodeAt(i);
     hash = hash & hash; // Convert to 32bit integer
   }
   return Math.abs(hash).toString(36);
@@ -17,7 +17,7 @@ export function normalizeUrl(rawUrl: string): string {
   try {
     const url = new URL(rawUrl.trim());
     // Strip common tracking parameters
-    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid'].forEach(param => {
+    ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'fbclid', 'gclid'].forEach((param) => {
       url.searchParams.delete(param);
     });
     // Article links end up in hrefs and window.open, so only http(s) is allowed through
@@ -33,7 +33,7 @@ export function generateArticleId(sourceId: string, guid?: string, url?: string,
   if (guid && guid.trim().length > 3) {
     return `${sourceId}-${simpleHash(guid.trim())}`;
   }
-  const target = normalizeUrl(url || '') || (title || '');
+  const target = normalizeUrl(url || '') || title || '';
   return `${sourceId}-${simpleHash(target)}`;
 }
 
@@ -42,15 +42,17 @@ export function generateArticleId(sourceId: string, guid?: string, url?: string,
  */
 function extractImageUrl(element: Element, rawHtml: string): string | undefined {
   // 1. media:content or media:thumbnail
-  const mediaContent = element.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'content')[0] ||
-                       element.getElementsByTagName('media:content')[0];
+  const mediaContent =
+    element.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'content')[0] ||
+    element.getElementsByTagName('media:content')[0];
   if (mediaContent && mediaContent.getAttribute('url')) {
     const url = mediaContent.getAttribute('url');
     if (url && (url.includes('http') || url.startsWith('//'))) return url;
   }
 
-  const mediaThumb = element.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'thumbnail')[0] ||
-                     element.getElementsByTagName('media:thumbnail')[0];
+  const mediaThumb =
+    element.getElementsByTagNameNS('http://search.yahoo.com/mrss/', 'thumbnail')[0] ||
+    element.getElementsByTagName('media:thumbnail')[0];
   if (mediaThumb && mediaThumb.getAttribute('url')) {
     const url = mediaThumb.getAttribute('url');
     if (url && (url.includes('http') || url.startsWith('//'))) return url;
@@ -107,16 +109,20 @@ function enrich(
   summary: string,
   itemCategories: string[],
   cves: string[],
-  cveIntel?: Record<string, CveIntel>
+  cveIntel?: Record<string, CveIntel>,
 ) {
   const tags = normalizeAndEnrichTags(itemCategories, title, summary, feed ? feedLevelTags(feed) : []);
-  const { severity, score: severityScore } = calculateThreatSeverity({
-    title,
-    description: summary,
-    tags: itemCategories,
-    categories: feed?.category ? [feed.category] : [],
-    sourceId
-  }, cves, cveIntel);
+  const { severity, score: severityScore } = calculateThreatSeverity(
+    {
+      title,
+      description: summary,
+      tags: itemCategories,
+      categories: feed?.category ? [feed.category] : [],
+      sourceId,
+    },
+    cves,
+    cveIntel,
+  );
   return { tags, severity, severityScore };
 }
 
@@ -126,8 +132,8 @@ function enrich(
 function buildArticle(feed: Feed, raw: RawFeedItem): Article {
   const allCategories = new Set<string>();
   if (feed.category) allCategories.add(feed.category);
-  raw.itemCategories.forEach(c => allCategories.add(c));
-  (feed.tags || []).forEach(t => allCategories.add(t));
+  raw.itemCategories.forEach((c) => allCategories.add(c));
+  (feed.tags || []).forEach((t) => allCategories.add(t));
 
   const cleanTitle = stripHtmlToText(raw.title);
   // The summary is cut to 450 chars below; converting a whole 400 KB description (CISA advisories)
@@ -166,8 +172,8 @@ function buildArticle(feed: Feed, raw: RawFeedItem): Article {
  * so scoring changes apply without waiting for every item to be re-fetched.
  */
 export function rescoreArticle(article: Article, feed: Feed | undefined, cveIntel?: Record<string, CveIntel>): Article {
-  const feedLevel = new Set((feed ? feedLevelTags(feed) : []).map(t => t.toLowerCase()));
-  const itemCategories = (article.categories || []).filter(c => !feedLevel.has(c.toLowerCase()));
+  const feedLevel = new Set((feed ? feedLevelTags(feed) : []).map((t) => t.toLowerCase()));
+  const itemCategories = (article.categories || []).filter((c) => !feedLevel.has(c.toLowerCase()));
   const { tags, severity, severityScore } = enrich(
     feed,
     article.sourceId,
@@ -175,7 +181,7 @@ export function rescoreArticle(article: Article, feed: Feed | undefined, cveInte
     article.description || '',
     itemCategories,
     article.cves || [],
-    cveIntel
+    cveIntel,
   );
   return { ...article, tags, severity, severityScore };
 }
@@ -199,7 +205,7 @@ function newestEntries(entries: Element[], maxItems: number | undefined, dateTag
     return { el, index, t: isNaN(t) ? -Infinity : t };
   });
   dated.sort((a, b) => b.t - a.t || a.index - b.index);
-  return dated.slice(0, maxItems).map(d => d.el);
+  return dated.slice(0, maxItems).map((d) => d.el);
 }
 
 /**
@@ -277,15 +283,14 @@ function parseRssItem(item: Element, feed: Feed): Article | null {
 
   const guid = getTagText('guid') || url;
   const descriptionRaw = getTagText('description');
-  const contentEncoded = getNamespacedText('http://purl.org/rss/1.0/modules/content/', 'encoded') ||
-                         getTagText('content:encoded');
+  const contentEncoded =
+    getNamespacedText('http://purl.org/rss/1.0/modules/content/', 'encoded') || getTagText('content:encoded');
   const dcCreator = getNamespacedText('http://purl.org/dc/elements/1.1/', 'creator');
   const author = dcCreator || getTagText('author') || feed.name;
 
   // Publication date
-  const pubDateStr = getTagText('pubDate') ||
-                     getNamespacedText('http://purl.org/dc/elements/1.1/', 'date') ||
-                     new Date().toISOString();
+  const pubDateStr =
+    getTagText('pubDate') || getNamespacedText('http://purl.org/dc/elements/1.1/', 'date') || new Date().toISOString();
   let publishedAt: string;
   try {
     const parsedDate = new Date(pubDateStr);
@@ -295,7 +300,7 @@ function parseRssItem(item: Element, feed: Feed): Article | null {
   }
 
   const itemCategories = Array.from(item.getElementsByTagName('category'))
-    .map(c => c.textContent?.trim() || '')
+    .map((c) => c.textContent?.trim() || '')
     .filter(Boolean);
 
   const rawHtmlForImage = contentEncoded || descriptionRaw;
@@ -323,7 +328,7 @@ function parseAtomEntry(entry: Element, feed: Feed): Article | null {
   // Link in Atom: <link rel="alternate" href="..." /> or <link href="..." />
   let url = '';
   const links = Array.from(entry.getElementsByTagName('link'));
-  const altLink = links.find(l => l.getAttribute('rel') === 'alternate') || links[0];
+  const altLink = links.find((l) => l.getAttribute('rel') === 'alternate') || links[0];
   if (altLink) {
     url = altLink.getAttribute('href') || '';
   }
@@ -351,7 +356,7 @@ function parseAtomEntry(entry: Element, feed: Feed): Article | null {
   }
 
   const itemCategories = Array.from(entry.getElementsByTagName('category'))
-    .map(c => c.getAttribute('term') || c.getAttribute('label') || c.textContent?.trim() || '')
+    .map((c) => c.getAttribute('term') || c.getAttribute('label') || c.textContent?.trim() || '')
     .filter(Boolean);
 
   const rawHtmlForImage = contentRaw || summaryRaw;
@@ -386,7 +391,9 @@ export function parseRss2Json(jsonData: any, feed: Feed): Article[] {
       try {
         const d = new Date(rawDate);
         if (!isNaN(d.getTime())) publishedAt = d.toISOString();
-      } catch {}
+      } catch {
+        // invalid date; leave publishedAt as-is
+      }
 
       let image = item.thumbnail || item.enclosure?.link;
       if (!image && (item.content || item.description)) {
@@ -400,17 +407,19 @@ export function parseRss2Json(jsonData: any, feed: Feed): Article[] {
         ? item.categories.filter((c: any) => c && typeof c === 'string').map((c: string) => c.trim())
         : [];
 
-      articles.push(buildArticle(feed, {
-        title,
-        url,
-        guid,
-        author,
-        publishedAt,
-        itemCategories,
-        summaryHtml: item.description || item.content || '',
-        contentHtml: item.content || item.description || '',
-        image,
-      }));
+      articles.push(
+        buildArticle(feed, {
+          title,
+          url,
+          guid,
+          author,
+          publishedAt,
+          itemCategories,
+          summaryHtml: item.description || item.content || '',
+          contentHtml: item.content || item.description || '',
+          image,
+        }),
+      );
     } catch {
       // Continue parsing next item if one is malformed
     }

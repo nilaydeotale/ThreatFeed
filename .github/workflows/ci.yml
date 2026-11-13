@@ -22,8 +22,9 @@ jobs:
         run: |
           DIST_SIZE=$(du -sk dist | cut -f1)
           echo "Total bundle size: ${DIST_SIZE} KB"
-          # Set limit to 10MB (10240 KB)
-          if [ $DIST_SIZE -gt 10240 ]; then
-            echo "Error: Bundle size exceeds 10MB limit!"
+          # 2MB limit: the current build is ~1.2MB, so this catches real bloat without
+          # failing on the small variance between runs (unminified chunks, map files).
+          if [ $DIST_SIZE -gt 2048 ]; then
+            echo "Error: Bundle size exceeds 2MB limit!"
             exit 1
           fi

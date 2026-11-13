@@ -28,11 +28,15 @@ import {
   Folder,
   Copy,
   Terminal,
-  FileText
+  FileText,
 } from 'lucide-react';
 
 // A copy/CVE chip followed by small lookup chips (VirusTotal, GreyNoise, ...); in-app links stay in the tab
-const IocWithLookups: React.FC<{ lookups: { label: string; url: string }[]; onNavigate?: () => void; children: React.ReactNode }> = ({ lookups, onNavigate, children }) => (
+const IocWithLookups: React.FC<{
+  lookups: { label: string; url: string }[];
+  onNavigate?: () => void;
+  children: React.ReactNode;
+}> = ({ lookups, onNavigate, children }) => (
   <span className="inline-flex flex-wrap items-center gap-1">
     {children}
     {lookups.map((l) => {
@@ -69,7 +73,8 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
   hasNext = false,
   hasPrev = false,
 }) => {
-  const { feeds, toggleBookmark, toggleRead, markViewed, addCustomTagToArticle, setBookmarkFolder, setBookmarkNotes } = useFeeds();
+  const { feeds, toggleBookmark, toggleRead, markViewed, addCustomTagToArticle, setBookmarkFolder, setBookmarkNotes } =
+    useFeeds();
   const { settings, updateSettings } = useSettings();
   const [newTagInput, setNewTagInput] = useState('');
   const [showAddTag, setShowAddTag] = useState(false);
@@ -93,7 +98,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
   // Feber feeds (and any feed tagged "swedish") get a one-click English translation
   const isSwedish = useMemo(
     () => feeds.find((f) => f.id === article.sourceId)?.tags?.includes('swedish') ?? false,
-    [feeds, article.sourceId]
+    [feeds, article.sourceId],
   );
   const iocFileStem = `iocs-${article.sourceId}-${article.publishedAt.slice(0, 10)}`;
 
@@ -136,7 +141,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [article.id, hasNext, hasPrev, onNext, onPrev, onClose, toggleBookmark, toggleRead]);
+  }, [article.id, article.url, hasNext, hasPrev, onNext, onPrev, onClose, toggleBookmark, toggleRead]);
 
   const handleShare = async () => {
     if (navigator.share) {
@@ -167,7 +172,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
       `# Source: ${article.sourceName} (${article.url})`,
       `# Timestamp: ${new Date().toISOString()}`,
       '',
-      ...extractedIOCs.map(i => `${i.type.toUpperCase().padEnd(12)}: ${i.value}`)
+      ...extractedIOCs.map((i) => `${i.type.toUpperCase().padEnd(12)}: ${i.value}`),
     ].join('\n');
     navigator.clipboard.writeText(lines);
     setCopiedIOCs(true);
@@ -264,9 +269,11 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
 
                   {showFolderMenu && (
                     <div className="absolute right-0 top-full mt-1.5 w-52 rounded-lg bg-theme-surface border border-theme-border shadow-xl p-2 z-30 font-mono text-xs">
-                      <div className="text-[10px] uppercase font-bold text-theme-text-muted px-2 py-1">Assign Folder</div>
+                      <div className="text-[10px] uppercase font-bold text-theme-text-muted px-2 py-1">
+                        Assign Folder
+                      </div>
                       <div className="max-h-40 overflow-y-auto space-y-0.5">
-                        {settings.bookmarkFolders.map(f => (
+                        {settings.bookmarkFolders.map((f) => (
                           <button
                             key={f}
                             onClick={() => {
@@ -335,7 +342,11 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
               title={copied ? 'Link copied!' : 'Share article'}
               className="p-2 rounded hover:bg-theme-card text-theme-text-muted hover:text-theme-text transition-colors"
             >
-              {copied ? <span className="font-mono text-[10px] text-emerald-500 font-bold">COPIED</span> : <Share2 className="w-4 h-4" />}
+              {copied ? (
+                <span className="font-mono text-[10px] text-emerald-500 font-bold">COPIED</span>
+              ) : (
+                <Share2 className="w-4 h-4" />
+              )}
             </button>
 
             {/* Print */}
@@ -363,27 +374,30 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
           {/* Metadata banner */}
           <div className="flex flex-wrap items-center gap-2 mb-4 text-xs font-mono text-theme-text-muted pb-3 border-b border-theme-border/60">
             <SeverityBadge severity={article.severity} score={article.severityScore} showScore={true} />
-            {watchlistMatch.matched && (
-              <WatchlistBadge terms={watchlistMatch.matchedTerms} />
-            )}
+            {watchlistMatch.matched && <WatchlistBadge terms={watchlistMatch.matchedTerms} />}
             <StackBadge article={article} />
-            <span className="text-theme-accent font-bold uppercase tracking-wider">
-              {article.sourceName}
-            </span>
+            <span className="text-theme-accent font-bold uppercase tracking-wider">{article.sourceName}</span>
             <span>·</span>
             <time>{formatFullDateTime(article.publishedAt)}</time>
             {article.author && (
               <>
                 <span>·</span>
-                <span>By <strong className="text-theme-text font-medium">{article.author}</strong></span>
+                <span>
+                  By <strong className="text-theme-text font-medium">{article.author}</strong>
+                </span>
               </>
             )}
             {article.categories[0] ? (
-              <TagChip tag={article.categories[0]} className="ml-auto px-2 py-0.5 rounded bg-theme-card text-[11px] font-semibold text-theme-text-muted hover:text-theme-accent">
+              <TagChip
+                tag={article.categories[0]}
+                className="ml-auto px-2 py-0.5 rounded bg-theme-card text-[11px] font-semibold text-theme-text-muted hover:text-theme-accent"
+              >
                 {article.categories[0]}
               </TagChip>
             ) : (
-              <span className="ml-auto px-2 py-0.5 rounded bg-theme-card text-[11px] font-semibold text-theme-text-muted">Security Report</span>
+              <span className="ml-auto px-2 py-0.5 rounded bg-theme-card text-[11px] font-semibold text-theme-text-muted">
+                Security Report
+              </span>
             )}
           </div>
 
@@ -391,7 +405,9 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
           {watchlistMatch.matched && (
             <div className="mb-5 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center gap-2 text-xs font-mono text-amber-600 dark:text-amber-300">
               <span className="font-bold uppercase tracking-wider">🎯 Watchlist Alert:</span>
-              <span>Matched target keyword(s): <strong>{watchlistMatch.matchedTerms.join(', ')}</strong></span>
+              <span>
+                Matched target keyword(s): <strong>{watchlistMatch.matchedTerms.join(', ')}</strong>
+              </span>
             </div>
           )}
 
@@ -417,9 +433,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
           <div className="mb-8 p-4 rounded-lg bg-theme-accent-subtle/40 border border-theme-accent/20 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="text-left">
               <h4 className="font-serif text-base font-bold text-theme-text">Read full dispatch at source</h4>
-              <p className="text-xs text-theme-text-muted mt-0.5">
-                Published by {article.sourceName}
-              </p>
+              <p className="text-xs text-theme-text-muted mt-0.5">Published by {article.sourceName}</p>
             </div>
             <a
               href={article.url}
@@ -469,7 +483,9 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
                     CSV
                   </button>
                   <button
-                    onClick={() => downloadText(`${iocFileStem}.stix.json`, iocsToStix(extractedIOCs, article), 'application/json')}
+                    onClick={() =>
+                      downloadText(`${iocFileStem}.stix.json`, iocsToStix(extractedIOCs, article), 'application/json')
+                    }
                     title="Download a STIX 2.1 bundle for import into a SIEM / threat intel platform"
                     className="px-2.5 py-1 rounded bg-theme-surface hover:bg-theme-card border border-theme-border text-theme-text text-[11px] transition-colors font-mono"
                   >
@@ -482,7 +498,11 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
                 {extractedIOCs.map((ioc, idx) => {
                   const lookups = iocLookupLinks(ioc);
                   if (ioc.type === 'cve') {
-                    return <IocWithLookups key={idx} lookups={lookups} onNavigate={onClose}><CveChip cve={ioc.value} /></IocWithLookups>;
+                    return (
+                      <IocWithLookups key={idx} lookups={lookups} onNavigate={onClose}>
+                        <CveChip cve={ioc.value} />
+                      </IocWithLookups>
+                    );
                   }
                   if (ioc.type === 'mitre') {
                     return (
@@ -509,7 +529,9 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
                         className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] bg-theme-surface hover:bg-theme-card text-theme-text-muted hover:text-theme-text border border-theme-border transition-colors"
                       >
                         <span className="opacity-60">{ioc.type === 'ipv4' ? 'IP:' : 'HASH:'}</span>
-                        <span>{ioc.value.length > 20 ? `${ioc.value.slice(0, 10)}...${ioc.value.slice(-6)}` : ioc.value}</span>
+                        <span>
+                          {ioc.value.length > 20 ? `${ioc.value.slice(0, 10)}...${ioc.value.slice(-6)}` : ioc.value}
+                        </span>
                         <Copy className="w-2.5 h-2.5 opacity-50" />
                       </button>
                     </IocWithLookups>
@@ -538,9 +560,7 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
           <div className="pt-6 border-t border-theme-border">
             <div className="flex flex-wrap items-center gap-2 mb-3">
               <TagIcon className="w-4 h-4 text-theme-text-muted" />
-              <span className="font-mono text-xs text-theme-text-muted uppercase tracking-wider">
-                THREAT TAGS:
-              </span>
+              <span className="font-mono text-xs text-theme-text-muted uppercase tracking-wider">THREAT TAGS:</span>
               {article.tags.map((tag) => (
                 <TagChip
                   key={tag}
@@ -552,15 +572,16 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
               ))}
 
               {/* User Custom Tags */}
-              {article.customTags && article.customTags.map((tag) => (
-                <TagChip
-                  key={tag}
-                  tag={tag}
-                  className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-theme-accent-subtle text-theme-accent border border-theme-accent/30 hover:border-theme-accent font-semibold"
-                >
-                  +{tag}
-                </TagChip>
-              ))}
+              {article.customTags &&
+                article.customTags.map((tag) => (
+                  <TagChip
+                    key={tag}
+                    tag={tag}
+                    className="font-mono text-[11px] uppercase tracking-wider px-2 py-0.5 rounded bg-theme-accent-subtle text-theme-accent border border-theme-accent/30 hover:border-theme-accent font-semibold"
+                  >
+                    +{tag}
+                  </TagChip>
+                ))}
 
               {/* Add Custom Tag Form */}
               {showAddTag ? (
@@ -647,16 +668,14 @@ export const ReaderModal: React.FC<ReaderModalProps> = ({
                   </button>
                 </div>
               </div>
+            ) : article.bookmarkNotes ? (
+              <div className="p-3 rounded bg-theme-card/60 border border-theme-border/60 text-xs font-mono text-theme-text whitespace-pre-wrap">
+                {article.bookmarkNotes}
+              </div>
             ) : (
-              article.bookmarkNotes ? (
-                <div className="p-3 rounded bg-theme-card/60 border border-theme-border/60 text-xs font-mono text-theme-text whitespace-pre-wrap">
-                  {article.bookmarkNotes}
-                </div>
-              ) : (
-                <p className="text-xs font-mono text-theme-text-muted italic">
-                  No analyst notes attached. Click "Add Note" to record findings.
-                </p>
-              )
+              <p className="text-xs font-mono text-theme-text-muted italic">
+                No analyst notes attached. Click &quot;Add Note&quot; to record findings.
+              </p>
             )}
           </div>
         </article>
