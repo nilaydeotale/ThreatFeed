@@ -27,7 +27,7 @@ import {
   ArrowUpRight,
   FileText,
   Filter,
-  Workflow
+  Workflow,
 } from 'lucide-react';
 
 interface FeedHealthPageProps {
@@ -45,7 +45,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
     refreshProgress,
     toggleFeedEnabled,
     snapshotGeneratedAt,
-    dataSources
+    dataSources,
   } = useFeeds();
 
   const { settings, updateSettings } = useSettings();
@@ -62,7 +62,9 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
 
   // Search & Filter state
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'failed' | 'cors' | 'timeout' | 'unreachable'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'healthy' | 'failed' | 'cors' | 'timeout' | 'unreachable'>(
+    'all',
+  );
 
   // Accordion expanded feeds state
   const [expandedFeedIds, setExpandedFeedIds] = useState<Set<string>>(new Set());
@@ -111,7 +113,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
   const timeoutCount = Object.values(feedHealth).filter((h) => h.status === 'timeout').length;
   const unreachableCount = Object.values(feedHealth).filter((h) => h.status === 'proxy_unreachable').length;
   const failedCount = Object.values(feedHealth).filter(
-    (h) => h.status !== 'healthy' && h.status !== 'cors_error'
+    (h) => h.status !== 'healthy' && h.status !== 'cors_error',
   ).length;
 
   // Average latency
@@ -174,7 +176,9 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
     lines.push('# ThreatFeed Telemetry & Diagnostics Report');
     lines.push(`Generated: ${new Date().toISOString()}`);
     lines.push(`Current Active Gateway: ${settings.proxyMode.toUpperCase()}`);
-    lines.push(`Total Feeds: ${totalFeeds} | Healthy: ${healthyCount} | CORS Restricted: ${corsCount} | Failed/Timeout: ${failedCount}`);
+    lines.push(
+      `Total Feeds: ${totalFeeds} | Healthy: ${healthyCount} | CORS Restricted: ${corsCount} | Failed/Timeout: ${failedCount}`,
+    );
     if (avgLatency) lines.push(`Average Latency: ${avgLatency}ms`);
     lines.push('');
 
@@ -183,7 +187,9 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
       lines.push('| Gateway | Status | Latency | HTTP | Notes |');
       lines.push('|---|---|---|---|---|');
       for (const [gw, r] of Object.entries(gatewayPings)) {
-        lines.push(`| ${gw} | ${r.alive ? 'ONLINE' : 'DOWN'} | ${r.latencyMs}ms | ${r.status || '—'} | ${r.error || 'OK'} |`);
+        lines.push(
+          `| ${gw} | ${r.alive ? 'ONLINE' : 'DOWN'} | ${r.latencyMs}ms | ${r.status || '—'} | ${r.error || 'OK'} |`,
+        );
       }
     } else {
       lines.push('*(Run Gateway Benchmark to probe live latency)*');
@@ -191,15 +197,17 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
     lines.push('');
 
     lines.push('## Problematic Feeds Summary');
-    const failing = feeds.filter(f => feedHealth[f.id] && feedHealth[f.id].status !== 'healthy');
+    const failing = feeds.filter((f) => feedHealth[f.id] && feedHealth[f.id].status !== 'healthy');
     if (failing.length === 0) {
       lines.push('All enabled feeds are healthy!');
     } else {
       lines.push('| Feed Name | Status | Last Fetched | Updated Via | Latency | Diagnostic Error | URL |');
       lines.push('|---|---|---|---|---|---|---|');
-      failing.forEach(f => {
+      failing.forEach((f) => {
         const h = feedHealth[f.id];
-        lines.push(`| ${f.name} | ${h?.status || 'Unknown'} | ${h?.lastFetchedAt ? formatRelativeTime(h.lastFetchedAt) : 'Never'} | ${h?.gatewayUsed ? describeUpdateSource(h.gatewayUsed).label : '—'} | ${h?.latencyMs ? `${h.latencyMs}ms` : '—'} | ${h?.errorMessage || '—'} | ${f.url} |`);
+        lines.push(
+          `| ${f.name} | ${h?.status || 'Unknown'} | ${h?.lastFetchedAt ? formatRelativeTime(h.lastFetchedAt) : 'Never'} | ${h?.gatewayUsed ? describeUpdateSource(h.gatewayUsed).label : '—'} | ${h?.latencyMs ? `${h.latencyMs}ms` : '—'} | ${h?.errorMessage || '—'} | ${f.url} |`,
+        );
       });
     }
 
@@ -219,7 +227,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
         gateway,
         settings.customProxyUrl,
         settings.maxArticlesPerFeed ?? 25,
-        settings.maxArticleAgeDays ?? 30
+        settings.maxArticleAgeDays ?? 30,
       );
       setProbeResult(res);
     } catch (e: any) {
@@ -230,7 +238,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
         latencyMs: 0,
         articleCount: 0,
         rawSnippet: '',
-        errorMessage: e.message || 'Probe execution failed'
+        errorMessage: e.message || 'Probe execution failed',
       });
     } finally {
       setIsProbing(false);
@@ -257,7 +265,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono font-semibold bg-amber-500/10 text-amber-500 border border-amber-500/20">
             <Globe className="w-3.5 h-3.5" />
-            <span>Proxy Can't Reach Site</span>
+            <span>Proxy Can&apos;t Reach Site</span>
           </span>
         );
       case 'invalid_xml':
@@ -372,7 +380,8 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
               Ingesting: {refreshProgress.currentFeedName || 'Connecting to feeds...'}
             </span>
             <span className="text-theme-text-muted">
-              {refreshProgress.completed} / {refreshProgress.total} completed ({Math.round((refreshProgress.completed / Math.max(refreshProgress.total, 1)) * 100)}%)
+              {refreshProgress.completed} / {refreshProgress.total} completed (
+              {Math.round((refreshProgress.completed / Math.max(refreshProgress.total, 1)) * 100)}%)
             </span>
           </div>
           <div className="w-full bg-theme-surface h-1.5 rounded-full overflow-hidden">
@@ -385,23 +394,29 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
       )}
 
       {/* Server snapshot status: how the default feeds are kept up to date */}
-      <div className={`p-4 rounded-lg border flex flex-col sm:flex-row sm:items-center gap-3 ${
-        snapshotAgeMin !== null && snapshotAgeMin > 90 ? 'bg-amber-500/5 border-amber-500/30' : 'bg-theme-surface border-theme-border'
-      }`}>
+      <div
+        className={`p-4 rounded-lg border flex flex-col sm:flex-row sm:items-center gap-3 ${
+          snapshotAgeMin !== null && snapshotAgeMin > 90
+            ? 'bg-amber-500/5 border-amber-500/30'
+            : 'bg-theme-surface border-theme-border'
+        }`}
+      >
         <Workflow className="w-6 h-6 text-theme-accent flex-shrink-0" />
         {snapshotGeneratedAt && settings.dataSource !== 'live' ? (
           <div className="text-xs font-mono space-y-0.5">
             <p className="text-theme-text">
               <span className="font-bold">Server snapshot</span> built{' '}
-              <span title={formatFullDateTime(snapshotGeneratedAt)} className="font-bold text-theme-accent cursor-help">{formatRelativeTime(snapshotGeneratedAt)}</span>{' '}
+              <span title={formatFullDateTime(snapshotGeneratedAt)} className="font-bold text-theme-accent cursor-help">
+                {formatRelativeTime(snapshotGeneratedAt)}
+              </span>{' '}
               by the GitHub Action · covers {snapshotFeedCount} feed{snapshotFeedCount === 1 ? '' : 's'}
             </p>
             <p className="text-theme-text-muted font-serif">
               Rebuilt every 30 minutes (GitHub may start runs a few minutes late)
               {snapshotAgeMin !== null && snapshotAgeMin > 90
                 ? '. This snapshot is older than expected: check the "Deploy to GitHub Pages" workflow runs on GitHub.'
-                : `; the next one is due ${snapshotAgeMin !== null && snapshotAgeMin < 30 ? `in about ${Math.max(1, Math.round(30 - snapshotAgeMin))} min` : 'any minute'}.`}
-              {' '}Feeds not in the snapshot (ones you added) are fetched live through the {settings.proxyMode} gateway.
+                : `; the next one is due ${snapshotAgeMin !== null && snapshotAgeMin < 30 ? `in about ${Math.max(1, Math.round(30 - snapshotAgeMin))} min` : 'any minute'}.`}{' '}
+              Feeds not in the snapshot (ones you added) are fetched live through the {settings.proxyMode} gateway.
             </p>
           </div>
         ) : (
@@ -425,16 +440,39 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-1.5 text-xs font-mono">
             {dataSources.map((d) => (
               <li key={d.id} className="flex items-baseline gap-2">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px] ${d.status === 'ok' ? 'bg-emerald-500' : d.status === 'cached' ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 translate-y-[-1px] ${d.status === 'ok' ? 'bg-emerald-500' : d.status === 'cached' ? 'bg-amber-500' : 'bg-rose-500'}`}
+                />
                 <span className="text-theme-text">{d.label}</span>
-                <span className={d.status === 'ok' ? 'text-theme-text-muted' : d.status === 'cached' ? 'text-amber-500' : 'text-rose-500'}>
-                  {d.status === 'ok' ? (d.count !== undefined ? d.count.toLocaleString() : 'ok') : d.status === 'cached' ? 'reused previous data' : 'failed'}
+                <span
+                  className={
+                    d.status === 'ok'
+                      ? 'text-theme-text-muted'
+                      : d.status === 'cached'
+                        ? 'text-amber-500'
+                        : 'text-rose-500'
+                  }
+                >
+                  {d.status === 'ok'
+                    ? d.count !== undefined
+                      ? d.count.toLocaleString()
+                      : 'ok'
+                    : d.status === 'cached'
+                      ? 'reused previous data'
+                      : 'failed'}
                 </span>
-                {d.detail && <span className="text-theme-text-muted truncate" title={d.detail}>· {d.detail}</span>}
+                {d.detail && (
+                  <span className="text-theme-text-muted truncate" title={d.detail}>
+                    · {d.detail}
+                  </span>
+                )}
               </li>
             ))}
           </ul>
-          <p className="text-[11px] font-serif text-theme-text-muted">A failed source means that part of the data is missing or older until a later run succeeds; the rest of the snapshot is unaffected.</p>
+          <p className="text-[11px] font-serif text-theme-text-muted">
+            A failed source means that part of the data is missing or older until a later run succeeds; the rest of the
+            snapshot is unaffected.
+          </p>
         </div>
       )}
 
@@ -519,13 +557,13 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
               name: 'CORSFix Gateway',
               endpoint: 'proxy.corsfix.com',
               badge: 'Recommended',
-              desc: 'High-speed browser CORS proxy with automated failover'
+              desc: 'High-speed browser CORS proxy with automated failover',
             },
             {
               id: 'rss2json' as ProxyMode,
               name: 'RSS2JSON API',
               endpoint: 'api.rss2json.com',
-              desc: 'Structured JSON converter for standard RSS/Atom feeds'
+              desc: 'Structured JSON converter for standard RSS/Atom feeds',
             },
             {
               id: 'allorigins' as ProxyMode,
@@ -533,14 +571,14 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
               endpoint: 'api.allorigins.win',
               badge: 'Degraded',
               badgeColor: 'text-amber-500 bg-amber-500/10 border-amber-500/20',
-              desc: 'Open-source proxy. Intermittent Cloudflare 520 timeouts'
+              desc: 'Open-source proxy. Intermittent Cloudflare 520 timeouts',
             },
             {
               id: 'direct' as ProxyMode,
               name: 'Direct Browser Fetch',
               endpoint: 'Strict Origin',
-              desc: 'No gateway. Only loads feeds with native CORS headers'
-            }
+              desc: 'No gateway. Only loads feeds with native CORS headers',
+            },
           ].map((gw) => {
             const isActive = settings.proxyMode === gw.id;
             const ping = gatewayPings[gw.id];
@@ -562,20 +600,26 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                         ACTIVE
                       </span>
                     ) : gw.badge ? (
-                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${gw.badgeColor || 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}>
+                      <span
+                        className={`text-[10px] font-mono px-1.5 py-0.5 rounded border ${gw.badgeColor || 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'}`}
+                      >
                         {gw.badge}
                       </span>
                     ) : null}
                   </div>
 
                   <p className="font-mono text-[11px] text-theme-text-muted truncate mb-2">{gw.endpoint}</p>
-                  <p className="font-sans text-[11px] text-theme-text-muted line-clamp-2 leading-tight mb-3">{gw.desc}</p>
+                  <p className="font-sans text-[11px] text-theme-text-muted line-clamp-2 leading-tight mb-3">
+                    {gw.desc}
+                  </p>
                 </div>
 
                 <div className="pt-2 border-t border-theme-border/50 flex items-center justify-between text-[11px] font-mono">
                   <div>
                     {ping ? (
-                      <span className={`flex items-center gap-1 font-bold ${ping.alive ? 'text-emerald-500' : 'text-rose-500'}`}>
+                      <span
+                        className={`flex items-center gap-1 font-bold ${ping.alive ? 'text-emerald-500' : 'text-rose-500'}`}
+                      >
                         {ping.alive ? `⚡ ${ping.latencyMs}ms` : 'Offline / Hang'}
                       </span>
                     ) : (
@@ -652,7 +696,11 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                     setExpandedFeedIds(new Set(filteredFeeds.map((f) => f.id)));
                   }
                 }}
-                title={expandedFeedIds.size === filteredFeeds.length ? 'Collapse all feed sources' : 'Expand all feed sources'}
+                title={
+                  expandedFeedIds.size === filteredFeeds.length
+                    ? 'Collapse all feed sources'
+                    : 'Expand all feed sources'
+                }
                 className="px-2.5 py-1 rounded bg-theme-card text-theme-text-muted hover:text-theme-text hover:border-theme-accent border border-theme-border font-mono text-xs flex items-center gap-1.5 transition-colors"
               >
                 <ChevronsUpDown className="w-3.5 h-3.5" />
@@ -677,9 +725,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
               return (
                 <div
                   key={feed.id}
-                  className={`transition-colors ${
-                    isExpanded ? 'bg-theme-card/30' : 'hover:bg-theme-card/15'
-                  }`}
+                  className={`transition-colors ${isExpanded ? 'bg-theme-card/30' : 'hover:bg-theme-card/15'}`}
                 >
                   {/* Accordion Row Header */}
                   <div
@@ -735,32 +781,39 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                       </div>
 
                       <div className="text-theme-text-muted whitespace-nowrap">
-                        {health?.lastFetchedAt ? (() => {
-                          const source = describeUpdateSource(health.gatewayUsed);
-                          const failed = health.status !== 'healthy';
-                          const tooltip = [
-                            source.detail,
-                            `Last attempt: ${formatFullDateTime(health.lastFetchedAt)}`,
-                            `Last success: ${health.lastSuccessAt ? formatFullDateTime(health.lastSuccessAt) : 'never'}`,
-                          ].join('\n');
-                          return (
-                            <span title={tooltip} className="inline-flex items-center gap-1.5 cursor-help hover:text-theme-text transition-colors">
-                              <Clock className="w-3 h-3 text-theme-text-muted/70 flex-shrink-0" />
-                              <span>
-                                {failed
-                                  ? `Tried ${formatRelativeTime(health.lastFetchedAt)}${health.lastSuccessAt ? ` · last OK ${formatRelativeTime(health.lastSuccessAt)}` : ''}`
-                                  : `Updated ${formatRelativeTime(health.lastSuccessAt || health.lastFetchedAt)}`}
+                        {health?.lastFetchedAt ? (
+                          (() => {
+                            const source = describeUpdateSource(health.gatewayUsed);
+                            const failed = health.status !== 'healthy';
+                            const tooltip = [
+                              source.detail,
+                              `Last attempt: ${formatFullDateTime(health.lastFetchedAt)}`,
+                              `Last success: ${health.lastSuccessAt ? formatFullDateTime(health.lastSuccessAt) : 'never'}`,
+                            ].join('\n');
+                            return (
+                              <span
+                                title={tooltip}
+                                className="inline-flex items-center gap-1.5 cursor-help hover:text-theme-text transition-colors"
+                              >
+                                <Clock className="w-3 h-3 text-theme-text-muted/70 flex-shrink-0" />
+                                <span>
+                                  {failed
+                                    ? `Tried ${formatRelativeTime(health.lastFetchedAt)}${health.lastSuccessAt ? ` · last OK ${formatRelativeTime(health.lastSuccessAt)}` : ''}`
+                                    : `Updated ${formatRelativeTime(health.lastSuccessAt || health.lastFetchedAt)}`}
+                                </span>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
+                                    source.kind === 'snapshot'
+                                      ? 'bg-theme-accent/10 text-theme-accent border-theme-accent/30'
+                                      : 'bg-theme-card text-theme-text-muted border-theme-border'
+                                  }`}
+                                >
+                                  {source.label}
+                                </span>
                               </span>
-                              <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                                source.kind === 'snapshot'
-                                  ? 'bg-theme-accent/10 text-theme-accent border-theme-accent/30'
-                                  : 'bg-theme-card text-theme-text-muted border-theme-border'
-                              }`}>
-                                {source.label}
-                              </span>
-                            </span>
-                          );
-                        })() : (
+                            );
+                          })()
+                        ) : (
                           <span className="text-theme-text-muted/50">Never</span>
                         )}
                       </div>
@@ -808,7 +861,9 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
 
                           {/* HTTP Status & Diagnostics */}
                           <div className="max-w-md">
-                            <span className="text-[10px] uppercase text-theme-text-muted block">Status & Diagnostic Info</span>
+                            <span className="text-[10px] uppercase text-theme-text-muted block">
+                              Status & Diagnostic Info
+                            </span>
                             <div className="mt-0.5">
                               {health?.errorMessage ? (
                                 <span className="text-rose-400 font-sans text-xs block leading-tight">
@@ -863,7 +918,11 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                             {health.attemptedGateways.map((attempt, idx) => (
                               <div key={idx} className="flex items-center gap-2 text-[11px]">
                                 <span className="text-theme-text-muted font-bold">[{idx + 1}]</span>
-                                <span className={attempt.includes('OK') ? 'text-emerald-500 font-semibold' : 'text-amber-500'}>
+                                <span
+                                  className={
+                                    attempt.includes('OK') ? 'text-emerald-500 font-semibold' : 'text-amber-500'
+                                  }
+                                >
                                   {attempt}
                                 </span>
                               </div>
@@ -886,7 +945,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
 
                         {recentArticles.length === 0 ? (
                           <div className="py-4 text-center text-theme-text-muted font-sans text-xs italic">
-                            No dispatches stored for this source yet. Click "Retry" to fetch latest articles.
+                            No dispatches stored for this source yet. Click &quot;Retry&quot; to fetch latest articles.
                           </div>
                         ) : (
                           <div className="divide-y divide-theme-border/40 border border-theme-border/60 rounded-lg overflow-hidden bg-theme-surface/50">
@@ -928,7 +987,12 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                                     className="inline-flex items-center gap-1 cursor-help text-theme-text"
                                   >
                                     <Clock className="w-3 h-3 text-theme-accent flex-shrink-0" />
-                                    <span>Fetched {formatRelativeTime(article.fetchedAt || health?.lastFetchedAt || article.publishedAt)}</span>
+                                    <span>
+                                      Fetched{' '}
+                                      {formatRelativeTime(
+                                        article.fetchedAt || health?.lastFetchedAt || article.publishedAt,
+                                      )}
+                                    </span>
                                   </span>
                                 </div>
                               </div>
@@ -1026,7 +1090,9 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                       {feedHealth[debugFeed.id]!.attemptedGateways!.map((attempt, idx) => (
                         <div key={idx} className="flex items-center gap-2 text-[11px]">
                           <span className="text-theme-text-muted font-bold">[{idx + 1}]</span>
-                          <span className={attempt.includes('OK') ? 'text-emerald-500 font-semibold' : 'text-amber-500'}>
+                          <span
+                            className={attempt.includes('OK') ? 'text-emerald-500 font-semibold' : 'text-amber-500'}
+                          >
                             {attempt}
                           </span>
                         </div>
@@ -1127,9 +1193,7 @@ export const FeedHealthPage: React.FC<FeedHealthPageProps> = ({ onOpenSettings }
                     </div>
 
                     {probeResult.errorMessage && (
-                      <p className="text-[11px] font-mono text-rose-300">
-                        Error: {probeResult.errorMessage}
-                      </p>
+                      <p className="text-[11px] font-mono text-rose-300">Error: {probeResult.errorMessage}</p>
                     )}
 
                     {probeResult.rawSnippet && (

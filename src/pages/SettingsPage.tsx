@@ -35,10 +35,22 @@ import {
   ArrowDown,
   SlidersHorizontal,
   Clock,
-  Tv
+  Tv,
 } from 'lucide-react';
 import { TV_INTERVAL_STEPS } from '../services/tv/tvSettings';
-import { ArticleSpacing, BorderStyle, ContainerWidth, FontFamily, ImageBehavior, LayoutMode, ProxyMode, ThemeMode, TvAnimationSpeed, TvTileSize, TvTransition } from '../types';
+import {
+  ArticleSpacing,
+  BorderStyle,
+  ContainerWidth,
+  FontFamily,
+  ImageBehavior,
+  LayoutMode,
+  ProxyMode,
+  ThemeMode,
+  TvAnimationSpeed,
+  TvTileSize,
+  TvTransition,
+} from '../types';
 
 const ACCENT_PRESETS = [
   { name: 'Crimson', color: '#e11d48' },
@@ -105,9 +117,7 @@ export const SettingsPage: React.FC = () => {
   };
 
   const handleToggleSection = (id: string) => {
-    const updated = (settings.newspaperSections || []).map((s) =>
-      s.id === id ? { ...s, enabled: !s.enabled } : s
-    );
+    const updated = (settings.newspaperSections || []).map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s));
     updateSettings({ newspaperSections: updated });
   };
 
@@ -195,9 +205,7 @@ export const SettingsPage: React.FC = () => {
               Live Newspaper Design Preview
             </span>
           </div>
-          <span className="font-mono text-[11px] text-theme-text-muted">
-            Updates in real-time
-          </span>
+          <span className="font-mono text-[11px] text-theme-text-muted">Updates in real-time</span>
         </div>
 
         <div className="p-4 rounded-lg bg-theme-card border border-theme-border/60">
@@ -212,12 +220,19 @@ export const SettingsPage: React.FC = () => {
             Attackers Target Zero-Day In Multi-Cloud Edge Appliances
           </h3>
           <p className="font-serif text-sm text-theme-text-muted leading-relaxed line-clamp-2">
-            Security researchers discover ongoing automated exploitation campaigns weaponizing chained authentication bypass primitives across enterprise gateways.
+            Security researchers discover ongoing automated exploitation campaigns weaponizing chained authentication
+            bypass primitives across enterprise gateways.
           </p>
           <div className="mt-3 pt-2 border-t border-theme-border/50 flex items-center gap-2 font-mono text-[10px] text-theme-text-muted">
-            <span className="px-1.5 py-0.5 rounded bg-theme-surface border border-theme-border uppercase">#Zero-Day</span>
-            <span className="px-1.5 py-0.5 rounded bg-theme-surface border border-theme-border uppercase">#CVE-2026-9041</span>
-            <span className="ml-auto text-theme-accent font-semibold">Active Font: {settings.fontFamily.toUpperCase()}</span>
+            <span className="px-1.5 py-0.5 rounded bg-theme-surface border border-theme-border uppercase">
+              #Zero-Day
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-theme-surface border border-theme-border uppercase">
+              #CVE-2026-9041
+            </span>
+            <span className="ml-auto text-theme-accent font-semibold">
+              Active Font: {settings.fontFamily.toUpperCase()}
+            </span>
           </div>
         </div>
       </div>
@@ -269,12 +284,8 @@ export const SettingsPage: React.FC = () => {
                     : 'border-theme-border bg-theme-card text-theme-text-muted hover:text-theme-text'
                 }`}
               >
-                <div className={`text-base text-theme-text mb-1 ${f.fontPreview}`}>
-                  {f.label}
-                </div>
-                <div className="text-[11px] font-sans opacity-70 leading-relaxed">
-                  {f.desc}
-                </div>
+                <div className={`text-base text-theme-text mb-1 ${f.fontPreview}`}>{f.label}</div>
+                <div className="text-[11px] font-sans opacity-70 leading-relaxed">{f.desc}</div>
               </button>
             ))}
           </div>
@@ -514,9 +525,7 @@ export const SettingsPage: React.FC = () => {
                 className="w-8 h-8 rounded cursor-pointer border border-theme-border bg-transparent"
                 title="Custom color"
               />
-              <span className="font-mono text-xs text-theme-text-muted uppercase">
-                {settings.accentColor}
-              </span>
+              <span className="font-mono text-xs text-theme-text-muted uppercase">{settings.accentColor}</span>
             </div>
           </div>
         </div>
@@ -530,9 +539,11 @@ export const SettingsPage: React.FC = () => {
             className="mt-1 accent-[var(--color-accent)]"
           />
           <span>
-            <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted">Reduce motion</span>
+            <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted">
+              Reduce motion
+            </span>
             <span className="block text-xs font-serif text-theme-text-muted mt-1">
-              Turns off animations and transitions. Also follows your system's reduced-motion setting.
+              Turns off animations and transitions. Also follows your system&apos;s reduced-motion setting.
             </span>
           </span>
         </label>
@@ -546,7 +557,10 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <div>
-          <label htmlFor="tv-interval" className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">
+          <label
+            htmlFor="tv-interval"
+            className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1"
+          >
             Time per screen
           </label>
           <p className="text-xs font-serif text-theme-text-muted mb-2">
@@ -559,7 +573,9 @@ export const SettingsPage: React.FC = () => {
             className="w-full sm:w-64 bg-theme-card border border-theme-border rounded px-3 py-2 text-xs font-mono text-theme-text focus:outline-none focus:border-theme-accent"
           >
             {TV_INTERVAL_STEPS.map((s) => (
-              <option key={s} value={s}>{formatTvInterval(s)}</option>
+              <option key={s} value={s}>
+                {formatTvInterval(s)}
+              </option>
             ))}
           </select>
         </div>
@@ -569,7 +585,11 @@ export const SettingsPage: React.FC = () => {
           <p className="text-xs font-serif text-theme-text-muted mb-2">
             Large: 3–5 tiles · Medium: 5–7 · Small: 6–10 · X-Small: 12–16. Applies to TV mode and dashboards.
           </p>
-          <div role="group" aria-label="TV tile size" className="inline-flex border border-theme-border rounded-md p-0.5 bg-theme-card">
+          <div
+            role="group"
+            aria-label="TV tile size"
+            className="inline-flex border border-theme-border rounded-md p-0.5 bg-theme-card"
+          >
             {(['large', 'medium', 'small', 'xsmall'] as TvTileSize[]).map((t) => (
               <button
                 key={t}
@@ -577,7 +597,9 @@ export const SettingsPage: React.FC = () => {
                 aria-pressed={settings.tvTileSize === t}
                 onClick={() => updateSettings({ tvTileSize: t })}
                 className={`px-3 py-1.5 rounded text-xs font-mono capitalize transition-colors ${
-                  settings.tvTileSize === t ? 'bg-theme-accent-subtle text-theme-accent font-bold' : 'text-theme-text-muted hover:text-theme-text'
+                  settings.tvTileSize === t
+                    ? 'bg-theme-accent-subtle text-theme-accent font-bold'
+                    : 'text-theme-text-muted hover:text-theme-text'
                 }`}
               >
                 {t === 'xsmall' ? 'X-Small' : t}
@@ -587,9 +609,15 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <div>
-          <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">Transition</span>
+          <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">
+            Transition
+          </span>
           <p className="text-xs font-serif text-theme-text-muted mb-2">How one set gives way to the next.</p>
-          <div role="group" aria-label="TV transition" className="inline-flex border border-theme-border rounded-md p-0.5 bg-theme-card">
+          <div
+            role="group"
+            aria-label="TV transition"
+            className="inline-flex border border-theme-border rounded-md p-0.5 bg-theme-card"
+          >
             {(['fade', 'slide', 'reveal'] as TvTransition[]).map((t) => (
               <button
                 key={t}
@@ -597,7 +625,9 @@ export const SettingsPage: React.FC = () => {
                 aria-pressed={settings.tvTransition === t}
                 onClick={() => updateSettings({ tvTransition: t })}
                 className={`px-3 py-1.5 rounded text-xs font-mono capitalize transition-colors ${
-                  settings.tvTransition === t ? 'bg-theme-accent-subtle text-theme-accent font-bold' : 'text-theme-text-muted hover:text-theme-text'
+                  settings.tvTransition === t
+                    ? 'bg-theme-accent-subtle text-theme-accent font-bold'
+                    : 'text-theme-text-muted hover:text-theme-text'
                 }`}
               >
                 {t}
@@ -607,9 +637,18 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <div>
-          <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">Animation speed</span>
-          <p className="text-xs font-serif text-theme-text-muted mb-2">How fast tiles move and charts draw in. Fast is the original speed; Reduce motion still uses a quick plain fade.</p>
-          <div role="group" aria-label="TV animation speed" className="inline-flex border border-theme-border rounded-md p-0.5 bg-theme-card">
+          <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">
+            Animation speed
+          </span>
+          <p className="text-xs font-serif text-theme-text-muted mb-2">
+            How fast tiles move and charts draw in. Fast is the original speed; Reduce motion still uses a quick plain
+            fade.
+          </p>
+          <div
+            role="group"
+            aria-label="TV animation speed"
+            className="inline-flex border border-theme-border rounded-md p-0.5 bg-theme-card"
+          >
             {(['slow', 'medium', 'fast'] as TvAnimationSpeed[]).map((t) => (
               <button
                 key={t}
@@ -617,7 +656,9 @@ export const SettingsPage: React.FC = () => {
                 aria-pressed={settings.tvAnimationSpeed === t}
                 onClick={() => updateSettings({ tvAnimationSpeed: t })}
                 className={`px-3 py-1.5 rounded text-xs font-mono capitalize transition-colors ${
-                  settings.tvAnimationSpeed === t ? 'bg-theme-accent-subtle text-theme-accent font-bold' : 'text-theme-text-muted hover:text-theme-text'
+                  settings.tvAnimationSpeed === t
+                    ? 'bg-theme-accent-subtle text-theme-accent font-bold'
+                    : 'text-theme-text-muted hover:text-theme-text'
                 }`}
               >
                 {t}
@@ -627,8 +668,12 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <div>
-          <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">QR codes on tiles</span>
-          <p className="text-xs font-serif text-theme-text-muted mb-2">Adds a QR code to wide and big news tiles so people can open the story on their phone.</p>
+          <span className="block text-xs font-mono uppercase tracking-wider text-theme-text-muted mb-1">
+            QR codes on tiles
+          </span>
+          <p className="text-xs font-serif text-theme-text-muted mb-2">
+            Adds a QR code to wide and big news tiles so people can open the story on their phone.
+          </p>
           <button
             type="button"
             role="switch"
@@ -636,7 +681,9 @@ export const SettingsPage: React.FC = () => {
             aria-label="QR codes on tiles"
             onClick={() => updateSettings({ tvQrCodes: !settings.tvQrCodes })}
             className={`px-3 py-1.5 rounded text-xs font-mono border border-theme-border transition-colors ${
-              settings.tvQrCodes ? 'bg-theme-accent-subtle text-theme-accent font-bold' : 'bg-theme-card text-theme-text-muted hover:text-theme-text'
+              settings.tvQrCodes
+                ? 'bg-theme-accent-subtle text-theme-accent font-bold'
+                : 'bg-theme-card text-theme-text-muted hover:text-theme-text'
             }`}
           >
             {settings.tvQrCodes ? 'On' : 'Off'}
@@ -656,7 +703,8 @@ export const SettingsPage: React.FC = () => {
             Browser Fetch & CORS Handling Mode
           </label>
           <p className="text-xs font-serif text-theme-text-muted mb-3">
-            Since ThreatFeed has no backend server, cross-origin feeds require a CORS gateway for direct browser reading.
+            Since ThreatFeed has no backend server, cross-origin feeds require a CORS gateway for direct browser
+            reading.
           </p>
 
           <div className="space-y-2">
@@ -703,12 +751,8 @@ export const SettingsPage: React.FC = () => {
                   className="mt-0.5 text-theme-accent"
                 />
                 <div>
-                  <span className="font-mono text-xs font-bold text-theme-text block">
-                    {opt.name}
-                  </span>
-                  <span className="text-[11px] font-sans text-theme-text-muted block mt-0.5">
-                    {opt.desc}
-                  </span>
+                  <span className="font-mono text-xs font-bold text-theme-text block">{opt.name}</span>
+                  <span className="text-[11px] font-sans text-theme-text-muted block mt-0.5">{opt.desc}</span>
                 </div>
               </label>
             ))}
@@ -754,7 +798,8 @@ export const SettingsPage: React.FC = () => {
               Per-Feed Auto-Refresh Cooldown
             </label>
             <p className="text-xs font-serif text-theme-text-muted mb-2">
-              Auto-refresh skips a feed that was fetched successfully within this window, to go easy on the CORS gateways. Manual refresh always fetches every feed.
+              Auto-refresh skips a feed that was fetched successfully within this window, to go easy on the CORS
+              gateways. Manual refresh always fetches every feed.
             </p>
             <select
               value={settings.autoRefreshFeedCooldownHours ?? 4}
@@ -806,7 +851,12 @@ export const SettingsPage: React.FC = () => {
               ))}
             </div>
             <span className="text-[11px] font-mono text-theme-text-muted mt-2 block">
-              Currently: <strong className="text-theme-text">{(settings.maxArticlesPerFeed ?? 25) === 0 ? 'All available items (No limit)' : `Latest ${settings.maxArticlesPerFeed ?? 25} items`}</strong>
+              Currently:{' '}
+              <strong className="text-theme-text">
+                {(settings.maxArticlesPerFeed ?? 25) === 0
+                  ? 'All available items (No limit)'
+                  : `Latest ${settings.maxArticlesPerFeed ?? 25} items`}
+              </strong>
             </span>
           </div>
 
@@ -816,7 +866,8 @@ export const SettingsPage: React.FC = () => {
               Maximum Article Age to Fetch
             </label>
             <p className="text-xs font-serif text-theme-text-muted mb-2.5">
-              Ignore dispatches older than this cutoff. Default: not older than 30 days. Saved bookmarks are always preserved.
+              Ignore dispatches older than this cutoff. Default: not older than 30 days. Saved bookmarks are always
+              preserved.
             </p>
             <div className="grid grid-cols-6 gap-1.5">
               {[
@@ -843,7 +894,12 @@ export const SettingsPage: React.FC = () => {
               ))}
             </div>
             <span className="text-[11px] font-mono text-theme-text-muted mt-2 block">
-              Currently: <strong className="text-theme-text">{(settings.maxArticleAgeDays ?? 30) === 0 ? 'All time (No age cutoff)' : `Not older than ${settings.maxArticleAgeDays ?? 30} days`}</strong>
+              Currently:{' '}
+              <strong className="text-theme-text">
+                {(settings.maxArticleAgeDays ?? 30) === 0
+                  ? 'All time (No age cutoff)'
+                  : `Not older than ${settings.maxArticleAgeDays ?? 30} days`}
+              </strong>
             </span>
           </div>
         </div>
@@ -856,7 +912,8 @@ export const SettingsPage: React.FC = () => {
           <div>
             <h2 className="font-serif text-xl font-bold text-theme-text">Target Watchlist & Keyword Alerts</h2>
             <p className="font-serif text-xs text-theme-text-muted">
-              Configure organizational assets, high-value vendors, or threat actors to receive visual badges and filterable alerts across all feeds.
+              Configure organizational assets, high-value vendors, or threat actors to receive visual badges and
+              filterable alerts across all feeds.
             </p>
           </div>
         </div>
@@ -945,9 +1002,12 @@ export const SettingsPage: React.FC = () => {
         <div className="flex items-center gap-2 pb-2 border-b border-theme-border">
           <SlidersHorizontal className="w-5 h-5 text-theme-accent" />
           <div>
-            <h2 className="font-serif text-xl font-bold text-theme-text">Editorial Newspaper Sections & Story Clustering</h2>
+            <h2 className="font-serif text-xl font-bold text-theme-text">
+              Editorial Newspaper Sections & Story Clustering
+            </h2>
             <p className="font-serif text-xs text-theme-text-muted">
-              Configure the order of sections displayed on the newspaper edition and deduplicate reporting across multiple feeds.
+              Configure the order of sections displayed on the newspaper edition and deduplicate reporting across
+              multiple feeds.
             </p>
           </div>
         </div>
@@ -961,7 +1021,8 @@ export const SettingsPage: React.FC = () => {
             <div>
               <h3 className="font-serif text-sm font-bold text-theme-text">Multi-Source Story Clustering</h3>
               <p className="font-serif text-xs text-theme-text-muted">
-                Group duplicate coverage of the same breach, CVE, or incident across different publications under a single lead card with an expandable sources drawer.
+                Group duplicate coverage of the same breach, CVE, or incident across different publications under a
+                single lead card with an expandable sources drawer.
               </p>
             </div>
           </div>
@@ -988,7 +1049,8 @@ export const SettingsPage: React.FC = () => {
             <div>
               <h3 className="font-serif text-sm font-bold text-theme-text">Editorial Section Grouping</h3>
               <p className="font-serif text-xs text-theme-text-muted">
-                Group articles by categorized editorial blocks (e.g. Critical Threats, Security News, Threat Intel). When disabled, all articles are presented in strict chronological order (newest first).
+                Group articles by categorized editorial blocks (e.g. Critical Threats, Security News, Threat Intel).
+                When disabled, all articles are presented in strict chronological order (newest first).
               </p>
             </div>
           </div>
@@ -1062,11 +1124,11 @@ export const SettingsPage: React.FC = () => {
 
                   {/* Section Title */}
                   <div className="flex-grow min-w-0">
-                    <span className="font-serif text-sm font-bold text-theme-text block truncate">
-                      {sec.title}
-                    </span>
+                    <span className="font-serif text-sm font-bold text-theme-text block truncate">{sec.title}</span>
                     <span className="font-mono text-[11px] text-theme-text-muted block">
-                      {sec.minSeverity ? `Rule: Min Severity ${sec.minSeverity.toUpperCase()}` : `Rule: Category ${sec.category || 'General'}`}
+                      {sec.minSeverity
+                        ? `Rule: Min Severity ${sec.minSeverity.toUpperCase()}`
+                        : `Rule: Category ${sec.category || 'General'}`}
                     </span>
                   </div>
 
@@ -1096,7 +1158,8 @@ export const SettingsPage: React.FC = () => {
           <div>
             <h2 className="font-serif text-xl font-bold text-theme-text">Research & Bookmark Folders</h2>
             <p className="font-serif text-xs text-theme-text-muted">
-              Organize bookmarked security advisories, vulnerability disclosures, and incident notes into analyst folders.
+              Organize bookmarked security advisories, vulnerability disclosures, and incident notes into analyst
+              folders.
             </p>
           </div>
         </div>
@@ -1159,8 +1222,12 @@ export const SettingsPage: React.FC = () => {
         </div>
 
         <div className="text-xs font-mono text-theme-text-muted space-y-1">
-          <p>Local IndexedDB cache: <strong className="text-theme-text">{articles.length} articles stored</strong></p>
-          <p>Subscribed sources: <strong className="text-theme-text">{feeds.length} feeds configured</strong></p>
+          <p>
+            Local IndexedDB cache: <strong className="text-theme-text">{articles.length} articles stored</strong>
+          </p>
+          <p>
+            Subscribed sources: <strong className="text-theme-text">{feeds.length} feeds configured</strong>
+          </p>
         </div>
 
         <div className="flex flex-wrap gap-3 font-mono text-xs">

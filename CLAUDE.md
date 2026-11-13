@@ -8,7 +8,7 @@ ThreatFeed ("Security Intelligence Daily") is a client-side-only security news r
 aggregates curated RSS/Atom feeds and presents them as a digital newspaper, with CVE/KEV/EPSS
 enrichment, ransomware, actor and incident views, TV/dashboard modes and a printable broadsheet.
 React 18 + TypeScript + Vite + Tailwind, IndexedDB (`idb`), DOMPurify, MiniSearch, PWA. Live at
-https://jozeta.github.io/ThreatFeed/.
+https://nilaydeotale.github.io/ThreatFeed/.
 
 ## Commands
 

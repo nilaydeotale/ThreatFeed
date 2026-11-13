@@ -19,7 +19,7 @@ import {
   ExternalLink,
   Layers,
   Search,
-  X
+  X,
 } from 'lucide-react';
 
 const MONITOR_LOCALES = [
@@ -45,7 +45,7 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
     removeFeed,
     resetFeedsToDefault,
     refreshFeeds,
-    isRefreshing
+    isRefreshing,
   } = useFeeds();
 
   const { updateFilter } = useFilter();
@@ -70,17 +70,23 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
   const categories = Array.from(new Set(feeds.map((f) => f.category)));
 
   // Calculate article counts per feed
-  const articleCounts = articles.reduce((acc, a) => {
-    acc[a.sourceId] = (acc[a.sourceId] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-
-  const unreadCounts = articles.reduce((acc, a) => {
-    if (!a.read) {
+  const articleCounts = articles.reduce(
+    (acc, a) => {
       acc[a.sourceId] = (acc[a.sourceId] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
+
+  const unreadCounts = articles.reduce(
+    (acc, a) => {
+      if (!a.read) {
+        acc[a.sourceId] = (acc[a.sourceId] || 0) + 1;
+      }
+      return acc;
+    },
+    {} as Record<string, number>,
+  );
 
   const addModalShown = isAddModalOpen || !!editingFeed;
   useEffect(() => {
@@ -198,16 +204,16 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
         const imported = parseOPML(text);
         await addCustomFeeds(
           imported
-            .filter(item => item.name && item.url && isValidFeedUrl(item.url))
-            .map(item => ({
+            .filter((item) => item.name && item.url && isValidFeedUrl(item.url))
+            .map((item) => ({
               name: item.name!,
               url: item.url!,
               category: item.category || 'Imported',
               tags: item.tags || ['imported'],
               enabled: true,
-            }))
+            })),
         );
-      } catch (err) {
+      } catch {
         alert('Failed to parse OPML file.');
       }
     };
@@ -286,12 +292,8 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
             <div key={category} className="space-y-4">
               <div className="flex items-center gap-2 pb-2 border-b border-theme-border">
                 <Layers className="w-4 h-4 text-theme-accent" />
-                <h2 className="font-serif text-xl font-bold text-theme-text">
-                  {category}
-                </h2>
-                <span className="font-mono text-xs text-theme-text-muted">
-                  ({categoryFeeds.length} sources)
-                </span>
+                <h2 className="font-serif text-xl font-bold text-theme-text">{category}</h2>
+                <span className="font-mono text-xs text-theme-text-muted">({categoryFeeds.length} sources)</span>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -355,17 +357,26 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
                               <span>Healthy</span>
                             </span>
                           ) : health?.status === 'proxy_unreachable' ? (
-                            <span className="flex items-center gap-1 text-amber-500 font-medium" title={health.errorMessage}>
+                            <span
+                              className="flex items-center gap-1 text-amber-500 font-medium"
+                              title={health.errorMessage}
+                            >
                               <AlertTriangle className="w-3.5 h-3.5" />
-                              <span>Proxy Can't Reach Site</span>
+                              <span>Proxy Can&apos;t Reach Site</span>
                             </span>
                           ) : health?.status === 'cors_error' ? (
-                            <span className="flex items-center gap-1 text-amber-500 font-medium" title={health.errorMessage}>
+                            <span
+                              className="flex items-center gap-1 text-amber-500 font-medium"
+                              title={health.errorMessage}
+                            >
                               <AlertTriangle className="w-3.5 h-3.5" />
                               <span>CORS Restricted</span>
                             </span>
                           ) : health?.status ? (
-                            <span className="flex items-center gap-1 text-rose-500 font-medium" title={health.errorMessage}>
+                            <span
+                              className="flex items-center gap-1 text-rose-500 font-medium"
+                              title={health.errorMessage}
+                            >
                               <AlertTriangle className="w-3.5 h-3.5" />
                               <span>Error</span>
                             </span>
@@ -439,9 +450,7 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
             <h3 className="font-serif text-xl font-bold text-theme-text mb-1">
               {editingFeed ? 'Edit Feed Subscription' : 'Add Custom Security Feed'}
             </h3>
-            <p className="text-xs font-mono text-theme-text-muted mb-4">
-              Enter the RSS 2.0 or Atom XML endpoint URL.
-            </p>
+            <p className="text-xs font-mono text-theme-text-muted mb-4">Enter the RSS 2.0 or Atom XML endpoint URL.</p>
 
             {formError && (
               <div className="mb-4 p-3 rounded bg-rose-500/10 border border-rose-500/30 text-rose-500 text-xs font-mono">
@@ -492,9 +501,7 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
               </div>
 
               <div>
-                <label className="block text-theme-text-muted uppercase mb-1">
-                  Tags (comma separated)
-                </label>
+                <label className="block text-theme-text-muted uppercase mb-1">Tags (comma separated)</label>
                 <input
                   type="text"
                   value={formTags}
@@ -574,13 +581,15 @@ export const SourcesPage: React.FC<SourcesPageProps> = ({ onSelectFeed }) => {
                   className="w-full bg-theme-card border border-theme-border rounded px-3 py-2 text-theme-text focus:outline-none focus:border-theme-accent"
                 >
                   {MONITOR_LOCALES.map((l, i) => (
-                    <option key={l.lang} value={i}>{l.label}</option>
+                    <option key={l.lang} value={i}>
+                      {l.label}
+                    </option>
                   ))}
                 </select>
               </div>
 
               <p className="text-theme-text-muted">
-                Google News is fetched through your CORS gateway; if it's blocked, Feed Health will show it.
+                Google News is fetched through your CORS gateway; if it&apos;s blocked, Feed Health will show it.
               </p>
 
               <div className="flex justify-end gap-2 pt-4 border-t border-theme-border">
