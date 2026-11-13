@@ -10,6 +10,7 @@ module.exports = {
     'plugin:@typescript-eslint/recommended',
     'plugin:react/recommended',
     'plugin:react-hooks/recommended',
+    'plugin:jsx-a11y/recommended',
     'prettier',
   ],
   ignorePatterns: ['dist', '.eslintrc.cjs', 'node_modules'],
@@ -25,7 +26,7 @@ module.exports = {
       version: '18.2',
     },
   },
-  plugins: ['react-refresh'],
+  plugins: ['react-refresh', 'jsx-a11y'],
   rules: {
     'react-refresh/only-export-components': [
       'warn',

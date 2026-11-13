@@ -18,3 +18,12 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+      - name: Check Bundle Size
+        run: |
+          DIST_SIZE=$(du -sk dist | cut -f1)
+          echo "Total bundle size: ${DIST_SIZE} KB"
+          # Set limit to 10MB (10240 KB)
+          if [ $DIST_SIZE -gt 10240 ]; then
+            echo "Error: Bundle size exceeds 10MB limit!"
+            exit 1
+          fi
