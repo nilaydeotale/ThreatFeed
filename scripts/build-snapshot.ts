@@ -74,7 +74,7 @@ const report = (status: DataSourceStatus) => {
   if (status.status !== 'ok') console.warn(`  ${status.label}: ${status.status}${status.detail ? ` (${status.detail})` : ''}`);
 };
 const errorText = (err: unknown) => (err instanceof Error ? err.message : String(err)).slice(0, 200);
-const USER_AGENT = 'ThreatFeed snapshot bot (+https://github.com/jozeta/ThreatFeed)';
+const USER_AGENT = 'ThreatFeed snapshot bot (+https://github.com/nilaydeotale/ThreatFeed)';
 const MAX_ARTICLES_PER_FEED = 25;
 const MAX_AGE_DAYS = 30;
 const MAX_CONTENT_CHARS = 10000; // keeps the snapshot small; the reader links to the original for the rest

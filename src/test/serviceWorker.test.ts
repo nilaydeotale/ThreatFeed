@@ -1,7 +1,7 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 // The real public/sw.js, run against an in-memory Cache Storage and a scripted network
 import source from '../../public/sw.js?raw';
-const ORIGIN = 'https://jozeta.github.io';
+const ORIGIN = 'https://nilaydeotale.github.io';
 
 type Network = (url: string) => Promise<Response>;
 
