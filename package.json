@@ -13,7 +13,7 @@
     "world-map": "tsx scripts/build-world-map.ts"
   },
   "dependencies": {
-    "dompurify": "^3.4.17",
+    "dompurify": "^3.4.18",
     "idb": "^8.0.4",
     "lucide-react": "^1.64.0",
     "minisearch": "^7.1.1",
