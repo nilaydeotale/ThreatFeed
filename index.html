@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <meta name="theme-color" content="#0b0d10" />
+    <meta name="description" content="ThreatFeed — Security Intelligence Daily. Editorial RSS/Atom news reader presenting cybersecurity research, vulnerabilities, zero-days, malware analysis, and offensive/defensive tradecraft as a modern digital newspaper." />
+    
+    <link rel="alternate" type="application/rss+xml" title="ThreatFeed — News" href="data/feeds/news.xml" />
+    <link rel="alternate" type="application/rss+xml" title="ThreatFeed — Vulnerabilities" href="data/feeds/vulns.xml" />
+    <link rel="alternate" type="application/rss+xml" title="ThreatFeed — Ransomware" href="data/feeds/ransomware.xml" />
+    <link rel="alternate" type="application/rss+xml" title="ThreatFeed — npm advisories" href="data/feeds/npm.xml" />
+
+    <!-- PWA settings -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ThreatFeed" />
+
+    <!-- Editorial Fonts: Newsreader (Serif) + Inter (Sans) + JetBrains Mono (Monospace), self-hosted under public/vendor/ -->
+    <link rel="stylesheet" href="/vendor/inter-v20/fonts.css" />
+    <link rel="stylesheet" href="/vendor/jetbrains-mono-v24/fonts.css" />
+    <link rel="stylesheet" href="/vendor/newsreader-v26/fonts.css" />
+
+    <title>ThreatFeed — Security Intelligence Daily</title>
+    <script src="/tv-boot.js"></script>
+  </head>
+  <body class="bg-theme-bg text-theme-text antialiased selection:bg-rose-500 selection:text-white min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script src="/register-sw.js"></script>
+  </body>
+</html>
