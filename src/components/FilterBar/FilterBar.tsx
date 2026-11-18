@@ -107,6 +107,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
               <select
                 value={filters.severityFilter || 'all'}
                 onChange={(e) => updateFilter('severityFilter', e.target.value as ThreatSeverity | 'all')}
+                aria-label="Minimum severity"
                 className="w-full bg-theme-surface border border-theme-border rounded px-3 py-2 text-xs font-mono text-theme-text focus:outline-none focus:border-theme-accent"
               >
                 <option value="all">All Severities</option>
@@ -125,6 +126,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
               <select
                 value={filters.selectedSourceId || ''}
                 onChange={(e) => updateFilter('selectedSourceId', e.target.value || null)}
+                aria-label="Intelligence source"
                 className="w-full bg-theme-surface border border-theme-border rounded px-3 py-2 text-xs font-mono text-theme-text focus:outline-none focus:border-theme-accent"
               >
                 <option value="">All Sources ({feeds.length})</option>
@@ -167,6 +169,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
               <select
                 value={filters.dateRange}
                 onChange={(e) => updateFilter('dateRange', e.target.value as any)}
+                aria-label="Timeframe"
                 className="w-full bg-theme-surface border border-theme-border rounded px-3 py-2 text-xs font-mono text-theme-text focus:outline-none focus:border-theme-accent"
               >
                 <option value="all">All Time</option>
@@ -185,6 +188,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({ isOpen, onClose }) => {
               <select
                 value={filters.sortBy}
                 onChange={(e) => updateFilter('sortBy', e.target.value as any)}
+                aria-label="Sort by"
                 className="w-full bg-theme-surface border border-theme-border rounded px-3 py-2 text-xs font-mono text-theme-text focus:outline-none focus:border-theme-accent"
               >
                 <option value="newest">Newest First (Publication Time)</option>

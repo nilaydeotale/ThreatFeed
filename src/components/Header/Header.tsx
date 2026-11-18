@@ -268,6 +268,7 @@ export const Header: React.FC<HeaderProps> = ({
               value={filters.searchQuery}
               onChange={(e) => updateFilter('searchQuery', e.target.value)}
               placeholder="Search security news... (f)"
+              aria-label="Search security news"
               className="w-full pl-9 pr-14 py-1.5 text-xs font-mono bg-theme-card border border-theme-border rounded-md text-theme-text placeholder:text-theme-text-muted focus:outline-none focus:border-theme-accent transition-colors"
             />
             {filters.searchQuery && (() => {
