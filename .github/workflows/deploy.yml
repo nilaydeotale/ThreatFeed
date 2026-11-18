@@ -22,8 +22,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a
+      - uses: actions/setup-node@66f83c8206e0997178c8fd7bf1da9efccf5dd388
         with:
           node-version: 22
           cache: npm
@@ -31,18 +31,18 @@ jobs:
       - run: npm run lint
       - run: npm test
       # A second copy of the trends history (the published trends.json is the first), for runs that can't read it
-      - uses: actions/cache/restore@v6
+      - uses: actions/cache/restore@3edfce9056124e459a23f683a21433670d47daca
         with:
           path: .cache/trends.json
           key: trends-${{ github.run_id }}
           restore-keys: trends-
-      - uses: actions/cache/restore@v6
+      - uses: actions/cache/restore@3edfce9056124e459a23f683a21433670d47daca
         with:
           path: .cache/stats.json
           key: stats-${{ github.run_id }}
           restore-keys: stats-
       # A second copy of the published RSS feeds and their ledger, for runs that can't read the published ones
-      - uses: actions/cache/restore@v6
+      - uses: actions/cache/restore@3edfce9056124e459a23f683a21433670d47daca
         with:
           path: .cache/feeds/
           key: feeds-${{ github.run_id }}
@@ -201,7 +201,7 @@ jobs:
         run: mkdir -p .cache && cp public/data/trends.json .cache/trends.json
       # One cache entry per run is expected: restore picks the newest (trends- prefix) and GitHub evicts
       # entries not used for 7 days, so they don't pile up
-      - uses: actions/cache/save@v6
+      - uses: actions/cache/save@3edfce9056124e459a23f683a21433670d47daca
         if: hashFiles('public/data/trends.json') != ''
         with:
           path: .cache/trends.json
@@ -209,7 +209,7 @@ jobs:
       - name: Copy the stats history for the cache
         if: hashFiles('public/data/stats.json') != ''
         run: mkdir -p .cache && cp public/data/stats.json .cache/stats.json
-      - uses: actions/cache/save@v6
+      - uses: actions/cache/save@3edfce9056124e459a23f683a21433670d47daca
         if: hashFiles('public/data/stats.json') != ''
         with:
           path: .cache/stats.json
@@ -217,7 +217,7 @@ jobs:
       - name: Copy the RSS feeds for the cache
         if: hashFiles('public/data/feeds/seen.json') != ''
         run: mkdir -p .cache/feeds && cp public/data/feeds/seen.json public/data/feeds/*.xml .cache/feeds/
-      - uses: actions/cache/save@v6
+      - uses: actions/cache/save@3edfce9056124e459a23f683a21433670d47daca
         if: hashFiles('public/data/feeds/seen.json') != ''
         with:
           path: .cache/feeds/
@@ -225,7 +225,7 @@ jobs:
       - run: npm run build
         env:
           GITHUB_PAGES: 'true'
-      - uses: actions/upload-pages-artifact@v5
+      - uses: actions/upload-pages-artifact@5f327015a708106f6f1b7c9a633901af30fe80cb
         with:
           path: dist
 
@@ -237,4 +237,4 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346

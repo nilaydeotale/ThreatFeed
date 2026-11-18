@@ -41,7 +41,7 @@ export default defineConfig({
   define: { __APP_VERSION__: JSON.stringify(APP_VERSION) },
   server: {
     port: 5173,
-    host: true
+    host: false // localhost only; don't expose the dev server on the LAN
   },
   test: {
     environment: 'jsdom',
