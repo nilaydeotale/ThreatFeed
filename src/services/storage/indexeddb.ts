@@ -49,7 +49,7 @@ interface ThreatFeedDB extends DBSchema {
 }
 
 const DB_NAME = 'threatfeed_database';
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBPDatabase<ThreatFeedDB>> | null = null;
 
@@ -106,17 +106,19 @@ export async function saveArticlesToDB(newArticles: Article[]): Promise<void> {
   const articleStore = tx.objectStore('articles');
   const stateStore = tx.objectStore('articleState');
 
+  // Read every existing state and article once, so the per-article loop is pure computation
+  const existingStates = new Map((await stateStore.getAll()).map(s => [s.id, s]));
+  const existingArticles = new Map((await articleStore.getAll()).map(a => [a.id, a]));
+
   for (const incoming of newArticles) {
     let article = incoming;
-    // Check if user already marked this article read/viewed/bookmarked.
-    // Copy rather than mutate: callers' objects may already be in React state.
-    const existingState = await stateStore.get(article.id);
-    const stored = await articleStore.get(article.id);
+    const existingState = existingStates.get(incoming.id);
+    const stored = existingArticles.get(incoming.id);
     // fetchedAt is when it was first seen here; a re-fetched copy keeps the stored one
     if (stored?.fetchedAt) article = { ...article, fetchedAt: stored.fetchedAt };
     // A copy without text (snapshot articles, an older tab's merge) must not wipe a bookmark's stored text
     article = keepBookmarkText(article, stored, !!existingState?.bookmarked);
-    await articleStore.put(existingState ? {
+    const merged = existingState ? {
       ...article,
       read: existingState.read,
       viewed: existingState.viewed,
@@ -127,7 +129,12 @@ export async function saveArticlesToDB(newArticles: Article[]): Promise<void> {
       bookmarkedAt: existingState.bookmarkedAt,
       bookmarkFolder: existingState.bookmarkFolder,
       bookmarkNotes: existingState.bookmarkNotes,
-    } : article);
+    } : article;
+    // Skip writes whose stored copy is identical (avoids rewriting the whole list on every refresh)
+    if (stored && stored.content === merged.content && stored.title === merged.title && stored.publishedAt === merged.publishedAt) {
+      continue;
+    }
+    await articleStore.put(merged);
   }
 
   await tx.done;
