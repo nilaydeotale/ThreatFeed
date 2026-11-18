@@ -538,6 +538,10 @@ export const FeedProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const cooldownHours = settingsRef.current.autoRefreshFeedCooldownHours ?? 1;
       const cutoffMs = Date.now() - cooldownHours * 60 * 60 * 1000;
 
+      if (shouldPauseWhenHidden(document.hidden, typeof Notification !== 'undefined' ? Notification.permission : undefined, settingsRef.current.alertRules)) {
+        return;
+      }
+
       const feedsToFetch = feedsRef.current.filter(feed => {
         if (!feed.enabled) return false;
         if (cooldownHours <= 0) return true;
