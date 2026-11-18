@@ -12,6 +12,10 @@ function loadWorker(network: Network) {
   const caches = {
     open: async () => ({
       put: async (req: Request, res: Response) => void store.set(req.url, res),
+      match: async (req: Request | string) => {
+        const url = typeof req === 'string' ? new URL(req, `${ORIGIN}/ThreatFeed/`).href : req.url;
+        return store.get(url)?.clone();
+      },
       addAll: async () => undefined,
       keys: async () => [...store.keys()].map(url => new Request(url)),
       delete: async (req: Request) => store.delete(req.url),

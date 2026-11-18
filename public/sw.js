@@ -1,5 +1,8 @@
 // ThreatFeed Service Worker for Offline First / Caching
 const CACHE_NAME = 'threatfeed-v5'; // v5: drops the TV version-check copies v4 kept (index.html?v=…)
+// A separate cache for hashed build assets, capped so old deploys can't grow without limit
+const ASSETS_CACHE_NAME = 'threatfeed-assets-v1';
+const ASSETS_CACHE_LIMIT = 60;
 const STATIC_ASSETS = [
   './',
   './index.html',
@@ -74,8 +77,35 @@ function pruneContentShards() {
 }
 
 // Cache first: only for files whose content can never change under the same URL
-function cacheFirst(request) {
-  return caches.match(request).then((cached) => cached || fetch(request).then((response) => cacheCopy(request, response)));
+function cacheFirstAsset(request) {
+  return caches.open(ASSETS_CACHE_NAME).then((cache) =>
+    cache.match(request).then((cached) => {
+      if (cached) return cached;
+      return fetch(request).then((response) => {
+        if (response && response.status === 200) {
+          const copy = response.clone();
+          cache.put(request, copy);
+        }
+        return response;
+      });
+    })
+  );
+}
+
+/**
+ * Prunes the assets cache to at most ASSETS_CACHE_LIMIT entries, keeping the most recent ones.
+ * Vite hashes every asset, so an entry for an old deploy is never needed again.
+ */
+function pruneOldAssets() {
+  return caches.open(ASSETS_CACHE_NAME).then((cache) =>
+    cache.keys().then((requests) => {
+      if (requests.length <= ASSETS_CACHE_LIMIT) return;
+      const toDelete = requests
+        .sort((a, b) => (a.url < b.url ? 1 : a.url > b.url ? -1 : 0))
+        .slice(ASSETS_CACHE_LIMIT);
+      return Promise.all(toDelete.map((r) => cache.delete(r)));
+    })
+  );
 }
 
 // Serve from cache immediately and refresh it in the background
@@ -112,9 +142,15 @@ self.addEventListener('fetch', (event) => {
   // cached, so each check doesn't leave another copy in Cache Storage
   if (event.request.cache === 'no-store' || (url.search && url.pathname.endsWith('/index.html'))) return;
 
-  // Vite's build output has a content hash in every file name, so a cached copy is always correct
+  // Vite's build output has a content hash in every file name, so a cached copy is always correct.
+  // Hashed assets live in their own cache so old deploys are pruned instead of accumulating forever.
   if (url.pathname.includes('/assets/')) {
-    event.respondWith(cacheFirst(event.request));
+    event.respondWith(
+      cacheFirstAsset(event.request).then((response) => {
+        if (response) event.waitUntil(pruneOldAssets().catch(() => {}));
+        return response;
+      })
+    );
     return;
   }
 
